@@ -1,0 +1,819 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum OrderStatus {
+  PENDING
+  IN_PROGRESS
+  REWORK
+  READY_TO_SHIP
+  SHIPPED
+  DRAFT_INVOICE
+  INVOICE_APPROVED
+  INVOICE_MODIFIED
+  FINAL_INVOICE
+  CLOSED
+}
+
+enum QuoteStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  SENT
+  CONVERTED
+  EXPIRED
+}
+
+enum ReworkStatus {
+  FLAGGED
+  PLAN_CREATED
+  IN_PROGRESS
+  RESOLVED
+  RETURNED_TO_QA
+}
+
+enum ToolStatus {
+  ACTIVE
+  RECEIVED
+  IN_USE
+  RETIRED
+}
+
+enum ValveType {
+  BALL
+  CHECK
+  GATE
+  OTHER
+}
+
+enum BallValvePortType {
+  FULL
+  REDUCED
+}
+
+enum BallValveMountType {
+  TRUNNION
+  FLOATING
+}
+
+enum CheckValveSeatType {
+  METAL
+  SOFT
+}
+
+enum HolidayType {
+  FIXED
+  FLOATING
+  EASTER
+}
+
+enum ProductLibraryType {
+  VALVE
+  VALVE1
+  VALVE2
+  WELL_VALVE
+  FITTING
+  PUP
+  WELL_COMPONENT
+  ACCESSORY
+}
+
+// ============================================================
+// AUTHENTICATION & AUTHORIZATION
+// ============================================================
+
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  email        String?   @unique
+  passwordHash String
+  isActive     Boolean   @default(true)
+  legacyUserId String?   @unique
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
+  roles          UserRole[]
+  sessions       Session[]
+  createdOrders  Order[]           @relation("OrderCreatedBy")
+  createdQuotes  Quote[]           @relation("QuoteCreatedBy")
+  auditLogs      AuditLog[]
+  orderLocks     OrderLock[]
+  reworkPlans    ReworkMemo[]      @relation("ReworkCreatedBy")
+  statusChanges  OrderStatusHistory[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String?
+  permissions Permission[]
+  users       UserRole[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String  @id @default(cuid())
+  code        String  @unique
+  description String?
+  category    String
+  roles       Role[]
+
+  createdAt DateTime @default(now())
+
+  @@map("permissions")
+}
+
+model UserRole {
+  userId     String
+  roleId     String
+  assignedAt DateTime @default(now())
+  assignedBy String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@map("sessions")
+}
+
+// ============================================================
+// CUSTOMERS
+// ============================================================
+
+model Customer {
+  id         String  @id @default(cuid())
+  custNo     Int     @unique @default(autoincrement())
+  company    String
+  address1   String?
+  address2   String?
+  city       String?
+  province   String?
+  postalCode String?
+  phone      String?
+  fax        String?
+  email      String?
+  terms      String?
+  notes      String?
+  isActive   Boolean @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  contacts        CustomerContact[]
+  shipToAddresses ShipToAddress[]
+  carriers        Carrier[]
+  references      CustomerReference[]
+  orders          Order[]
+  quotes          Quote[]
+
+  @@map("customers")
+}
+
+model CustomerContact {
+  id         String  @id @default(cuid())
+  customerId String
+  name       String
+  title      String?
+  phone      String?
+  email      String?
+  department String?
+  isPrimary  Boolean @default(false)
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@map("customer_contacts")
+}
+
+model ShipToAddress {
+  id         String  @id @default(cuid())
+  customerId String
+  name       String
+  address1   String
+  address2   String?
+  city       String
+  province   String?
+  postalCode String?
+  isDefault  Boolean @default(false)
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  orders   Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@map("ship_to_addresses")
+}
+
+model Carrier {
+  id         String  @id @default(cuid())
+  customerId String
+  name       String
+  account    String?
+  phone      String?
+  isDefault  Boolean @default(false)
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@map("carriers")
+}
+
+model CustomerReference {
+  id         String @id @default(cuid())
+  customerId String
+  reference  String
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([customerId])
+  @@map("customer_references")
+}
+
+// ============================================================
+// ORDERS
+// ============================================================
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNo         Int         @unique @default(autoincrement())
+  customerId      String
+  orderDate       DateTime    @default(now())
+  shipDate        DateTime?
+  dueDate         DateTime?
+  poNumber        String?
+  processTemplate String?
+  status          OrderStatus @default(PENDING)
+  orderTotal      Decimal     @default(0) @db.Decimal(12, 2)
+  gstAmount       Decimal     @default(0) @db.Decimal(10, 2)
+  gstRate         Decimal?    @db.Decimal(5, 2)
+  isComplete      Boolean     @default(false)
+  percentComplete Int         @default(0)
+  shipToAddressId String?
+  sourceQuoteId   String?
+  legacyOrderNo   Int?
+
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  customer      Customer       @relation(fields: [customerId], references: [id])
+  shipToAddress ShipToAddress? @relation(fields: [shipToAddressId], references: [id])
+  createdBy     User           @relation("OrderCreatedBy", fields: [createdById], references: [id])
+
+  details         OrderDetail[]
+  lock            OrderLock?
+  toolAssignments ToolAssignment[]
+  components      ListComponent[]
+  statusHistory   OrderStatusHistory[]
+  reworkItems     Rework[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([orderDate])
+  @@map("orders")
+}
+
+model OrderDetail {
+  id          String  @id @default(cuid())
+  orderId     String
+  lineNumber  Int
+  quantity    Int
+  description String
+  bore        String?
+  pieces      Int?
+  unitPrice   Decimal @db.Decimal(10, 2)
+  coating     String?
+  area        Decimal? @db.Decimal(10, 4)
+  lineTotal   Decimal @db.Decimal(12, 2)
+
+  libraryType   ProductLibraryType?
+  libraryItemId String?
+  partNo        String?
+  productCode   Int?
+
+  // QA tracking
+  currentPass Int @default(0)
+  passedQty   Int @default(0)
+  reworkQty   Int @default(0)
+
+  // Valve-specific flags
+  valveType          ValveType?
+  ballValvePortType  BallValvePortType?
+  ballValveMountType BallValveMountType?
+  checkValveSeatType CheckValveSeatType?
+  drtType            String?
+  additionalTypeFlag String?
+  hasInternals       Boolean @default(false)
+
+  legacyDetailNo Int?
+
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  reworkItems Rework[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@map("order_details")
+}
+
+model OrderLock {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  lockedById String
+  lockedAt  DateTime @default(now())
+  expiresAt DateTime
+
+  order    Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  lockedBy User  @relation(fields: [lockedById], references: [id])
+
+  @@map("order_locks")
+}
+
+model OrderStatusHistory {
+  id         String       @id @default(cuid())
+  orderId    String
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  changedById String
+  changedAt  DateTime     @default(now())
+  notes      String?
+
+  order     Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  changedBy User  @relation(fields: [changedById], references: [id])
+
+  @@index([orderId])
+  @@map("order_status_history")
+}
+
+// ============================================================
+// QUOTES
+// ============================================================
+
+model Quote {
+  id         String      @id @default(cuid())
+  quoteNo    Int         @unique @default(autoincrement())
+  customerId String
+  quoteDate  DateTime    @default(now())
+  expiryDate DateTime?
+  status     QuoteStatus @default(DRAFT)
+  quoteTotal Decimal     @default(0) @db.Decimal(12, 2)
+
+  createdById   String
+  legacyQuoteNo Int?
+
+  customer  Customer @relation(fields: [customerId], references: [id])
+  createdBy User     @relation("QuoteCreatedBy", fields: [createdById], references: [id])
+
+  components QuoteComponent[]
+  details    QuoteDetail[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([status])
+  @@map("quotes")
+}
+
+model QuoteComponent {
+  id          String             @id @default(cuid())
+  quoteId     String
+  lineNumber  Int
+  libraryType ProductLibraryType?
+  libraryItemId String?
+  description String
+  quantity    Int
+  unitPrice   Decimal @db.Decimal(10, 2)
+  lineTotal   Decimal @db.Decimal(12, 2)
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([quoteId])
+  @@map("quote_components")
+}
+
+model QuoteDetail {
+  id      String @id @default(cuid())
+  quoteId String
+  key     String
+  value   String
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([quoteId])
+  @@map("quote_details")
+}
+
+// ============================================================
+// QA & REWORK
+// ============================================================
+
+model Rework {
+  id            String       @id @default(cuid())
+  orderId       String
+  orderDetailId String
+  reworkQty     Int
+  status        ReworkStatus @default(FLAGGED)
+  resolved      Boolean      @default(false)
+  resolvedAt    DateTime?
+
+  reworkMemoId String?
+
+  order       Order        @relation(fields: [orderId], references: [id])
+  orderDetail OrderDetail  @relation(fields: [orderDetailId], references: [id])
+  reworkMemo  ReworkMemo?  @relation(fields: [reworkMemoId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@map("rework")
+}
+
+model ReworkMemo {
+  id              String @id @default(cuid())
+  planNo          Int    @unique @default(autoincrement())
+  productType     String
+  processTemplate String?
+  qaNotes         String?
+  coatingFailure  String?
+  methodFailure   String?
+  operations      String?
+  department      String?
+
+  createdById String
+
+  createdBy User @relation("ReworkCreatedBy", fields: [createdById], references: [id])
+
+  reworkItems Rework[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("rework_memos")
+}
+
+// ============================================================
+// PRODUCT LIBRARIES
+// ============================================================
+
+model ProductLibraryItem {
+  id          String             @id @default(cuid())
+  libraryType ProductLibraryType
+  libraryNo   Int
+  description String
+  size        String?
+  type        String?
+
+  // Pricing tiers (different libraries use different tiers)
+  price1 Decimal? @db.Decimal(10, 2)
+  price2 Decimal? @db.Decimal(10, 2)
+  price3 Decimal? @db.Decimal(10, 2)
+  price7 Decimal? @db.Decimal(10, 2)
+  price8 Decimal? @db.Decimal(10, 2)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([libraryType, libraryNo])
+  @@index([libraryType])
+  @@map("product_library_items")
+}
+
+// ============================================================
+// TOOLS
+// ============================================================
+
+model Tool {
+  id            String     @id @default(cuid())
+  toolNo        Int        @unique @default(autoincrement())
+  description   String
+  toolType      String?
+  status        ToolStatus @default(ACTIVE)
+  price         Decimal?   @db.Decimal(10, 2)
+  owner         String?
+  location      String?
+  isProprietary Boolean    @default(false)
+
+  parts       ToolPart[]
+  assignments ToolAssignment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("tools")
+}
+
+model ToolPart {
+  id          String   @id @default(cuid())
+  toolId      String
+  partNo      String
+  description String
+  price       Decimal? @db.Decimal(10, 2)
+  quantity    Int      @default(1)
+
+  tool Tool @relation(fields: [toolId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([toolId])
+  @@map("tool_parts")
+}
+
+model ToolAssignment {
+  id         String  @id @default(cuid())
+  toolId     String
+  orderId    String
+  assignment String?
+
+  tool  Tool  @relation(fields: [toolId], references: [id])
+  order Order @relation(fields: [orderId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@map("tool_assignments")
+}
+
+// ============================================================
+// PROCESS CONTROL
+// ============================================================
+
+model ProcessTemplate {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String?
+  isActive    Boolean @default(true)
+
+  steps ProcessTemplateStep[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("process_templates")
+}
+
+model ProcessTemplateStep {
+  id            String @id @default(cuid())
+  templateId    String
+  stepNumber    Int
+  operationName String
+  description   String?
+
+  template ProcessTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([templateId])
+  @@map("process_template_steps")
+}
+
+// ============================================================
+// LIST COMPONENTS (valve internals tracking)
+// ============================================================
+
+model ListComponent {
+  id          String @id @default(cuid())
+  orderId     String
+  description String
+
+  order   Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  details ListDetail[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@map("list_components")
+}
+
+model ListDetail {
+  id          String @id @default(cuid())
+  componentId String
+  description String
+  quantity    Int?
+
+  component ListComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([componentId])
+  @@map("list_details")
+}
+
+// ============================================================
+// FINANCIAL
+// ============================================================
+
+model TaxRate {
+  id            String   @id @default(cuid())
+  taxId         String
+  effectiveDate DateTime @db.Date
+  expiryDate    DateTime @db.Date
+  rate          Decimal  @db.Decimal(5, 2)
+
+  createdAt DateTime @default(now())
+
+  @@index([taxId, effectiveDate])
+  @@map("tax_rates")
+}
+
+model MonthEndSnapshot {
+  id              String  @id @default(cuid())
+  orderId         String
+  orderNo         Int
+  customerId      String
+  companyName     String
+  orderTotal      Decimal @db.Decimal(12, 2)
+  percentComplete Int
+  accrual         Decimal @db.Decimal(12, 2)
+  reportMonth     Int
+  reportYear      Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orderId, reportMonth, reportYear])
+  @@index([reportYear, reportMonth])
+  @@map("month_end_snapshots")
+}
+
+// ============================================================
+// LOOKUP TABLES
+// ============================================================
+
+model Holiday {
+  id          String      @id @default(cuid())
+  name        String
+  month       Int
+  day         Int?
+  dayOfWeek   Int?
+  occurrence  Int?
+  holidayType HolidayType
+  isActive    Boolean     @default(true)
+
+  @@map("holidays")
+}
+
+model CoatingFailureType {
+  id          String @id @default(cuid())
+  code        String @unique
+  description String
+
+  @@map("coating_failure_types")
+}
+
+model MethodFailureType {
+  id          String @id @default(cuid())
+  code        String @unique
+  description String
+
+  @@map("method_failure_types")
+}
+
+model Department {
+  id   String @id @default(cuid())
+  code String @unique
+  name String
+
+  @@map("departments")
+}
+
+model Operation {
+  id          String  @id @default(cuid())
+  code        String  @unique
+  name        String
+  description String?
+
+  @@map("operations")
+}
+
+// ============================================================
+// VENDORS & PURCHASES
+// ============================================================
+
+model Vendor {
+  id         String  @id @default(cuid())
+  name       String
+  address1   String?
+  address2   String?
+  city       String?
+  province   String?
+  postalCode String?
+  phone      String?
+  fax        String?
+  email      String?
+
+  purchases Purchase[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("vendors")
+}
+
+model Purchase {
+  id       String @id @default(cuid())
+  vendorId String
+
+  vendor  Vendor           @relation(fields: [vendorId], references: [id])
+  details PurchaseDetail[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("purchases")
+}
+
+model PurchaseDetail {
+  id          String  @id @default(cuid())
+  purchaseId  String
+  description String
+  quantity    Int
+  price       Decimal @db.Decimal(10, 2)
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@map("purchase_details")
+}
+
+// ============================================================
+// AUDIT LOG
+// ============================================================
+
+model AuditLog {
+  id         String  @id @default(cuid())
+  userId     String
+  action     String
+  entityType String
+  entityId   String?
+  oldValues  Json?
+  newValues  Json?
+  ipAddress  String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  timestamp DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
