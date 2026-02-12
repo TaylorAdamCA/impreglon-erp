@@ -9,6 +9,7 @@ import {
   productSchema,
   type ProductFormValues,
   type LibraryType,
+  LIBRARY_TYPE_LABELS,
   HAS_CATALOG_SOURCE,
   CATALOG_SOURCES,
 } from "@/lib/validations/product";
@@ -106,7 +107,7 @@ export function ProductDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? "Edit Item" : "Add Item"}
+            {isEdit ? "Edit Item" : `Add ${LIBRARY_TYPE_LABELS[libraryType].replace(/s$/, "")}`}
           </DialogTitle>
         </DialogHeader>
 

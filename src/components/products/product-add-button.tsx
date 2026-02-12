@@ -19,11 +19,13 @@ export function ProductAddButton({ libraryType }: ProductAddButtonProps) {
         <Plus className="mr-2 h-4 w-4" />
         Add Item
       </Button>
-      <ProductDialog
-        libraryType={libraryType}
-        open={open}
-        onOpenChange={setOpen}
-      />
+      {open && (
+        <ProductDialog
+          libraryType={libraryType}
+          open={open}
+          onOpenChange={setOpen}
+        />
+      )}
     </>
   );
 }
