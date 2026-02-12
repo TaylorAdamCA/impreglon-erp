@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { QuoteLineItems } from "./quote-line-items";
+import { AddItemDialog } from "./add-item-dialog";
 
 interface QuoteDetailProps {
   quoteId: string;
@@ -18,7 +19,7 @@ interface QuoteDetailProps {
 }
 
 export function QuoteDetail({ quoteId, components, isDraft }: QuoteDetailProps) {
-  const [, setAddItemOpen] = useState(false);
+  const [addItemOpen, setAddItemOpen] = useState(false);
 
   return (
     <>
@@ -28,7 +29,11 @@ export function QuoteDetail({ quoteId, components, isDraft }: QuoteDetailProps) 
         isDraft={isDraft}
         onAddItem={() => setAddItemOpen(true)}
       />
-      {/* AddItemDialog will be added in Task 8 */}
+      <AddItemDialog
+        quoteId={quoteId}
+        open={addItemOpen}
+        onOpenChange={setAddItemOpen}
+      />
     </>
   );
 }
