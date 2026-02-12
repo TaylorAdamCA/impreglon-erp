@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CustomerDetailTabs } from "@/components/customers/customer-detail-tabs";
+import { CustomerStatusToggle } from "@/components/customers/customer-status-toggle";
 
 interface CustomerDetailPageProps {
   params: Promise<{ id: string }>;
@@ -48,6 +49,11 @@ export default async function CustomerDetailPage({
             Customer #{customer.custNo}
           </p>
         </div>
+        <CustomerStatusToggle
+          customerId={customer.id}
+          company={customer.company}
+          isActive={customer.isActive}
+        />
       </div>
 
       <CustomerDetailTabs customer={customer} />

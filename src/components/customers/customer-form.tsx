@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 import {
   customerSchema,
   type CustomerFormValues,
@@ -47,6 +48,19 @@ export function CustomerForm({ customerId, defaultValues }: CustomerFormProps) {
     },
   });
 
+  const isDirty = form.formState.isDirty;
+
+  // Warn on browser close/refresh with unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
+
   async function onSubmit(data: CustomerFormValues) {
     setError("");
 
@@ -67,8 +81,11 @@ export function CustomerForm({ customerId, defaultValues }: CustomerFormProps) {
 
     const customer = await res.json();
     if (isEdit) {
+      form.reset(data);
+      toast.success("Changes saved successfully");
       router.refresh();
     } else {
+      toast.success("Customer created successfully");
       router.push(`/customers/${customer.id}`);
     }
   }
@@ -249,7 +266,15 @@ export function CustomerForm({ customerId, defaultValues }: CustomerFormProps) {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.back()}
+            onClick={() => {
+              if (
+                isDirty &&
+                !confirm("You have unsaved changes. Are you sure you want to leave?")
+              ) {
+                return;
+              }
+              router.back();
+            }}
           >
             Cancel
           </Button>

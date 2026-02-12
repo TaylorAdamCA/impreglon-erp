@@ -58,3 +58,30 @@ export async function PUT(
 
   return NextResponse.json(customer);
 }
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const body = await request.json();
+
+  if (typeof body.isActive !== "boolean") {
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
+
+  const customer = await prisma.customer.update({
+    where: { id },
+    data: {
+      isActive: body.isActive,
+      ...(body.isActive ? {} : { deletedAt: new Date() }),
+    },
+  });
+
+  return NextResponse.json(customer);
+}
