@@ -57,6 +57,12 @@ Detailed workflow documentation (extracted from VFP source) is at:
 - [ ] Business logic (pricing calculations, holiday-aware dates, GST, etc.)
 - [ ] Seed data / data migration from VFP DBF tables
 
+## Verification Requirements
+
+After every code change, run these checks before considering work complete:
+- `npm test` — all tests must pass
+- `npx next build` — build must succeed (once Prisma client is generated)
+
 ## Architecture Decisions
 
 - Prisma client output: `src/generated/prisma`
