@@ -78,13 +78,11 @@ enum HolidayType {
 }
 
 enum ProductLibraryType {
-  VALVE
-  VALVE1
-  VALVE2
-  WELL_VALVE
+  ANSI_VALVE
+  WELLHEAD_VALVE
   FITTING
-  PUP
-  WELL_COMPONENT
+  PUP_JOINT
+  WELLHEAD_COMPONENT
   ACCESSORY
 }
 
@@ -509,19 +507,31 @@ model ReworkMemo {
 // ============================================================
 
 model ProductLibraryItem {
-  id          String             @id @default(cuid())
-  libraryType ProductLibraryType
-  libraryNo   Int
-  description String
-  size        String?
-  type        String?
+  id            String             @id @default(cuid())
+  libraryType   ProductLibraryType
+  catalogSource String?            // "A", "B", "C" for ANSI_VALVE multi-catalog; null for others
+  libraryNo     Int
+  description   String
+  size          String?
+  type          String?
 
-  // Pricing tiers (different libraries use different tiers)
-  price1 Decimal? @db.Decimal(10, 2)
-  price2 Decimal? @db.Decimal(10, 2)
-  price3 Decimal? @db.Decimal(10, 2)
-  price7 Decimal? @db.Decimal(10, 2)
-  price8 Decimal? @db.Decimal(10, 2)
+  // Coating prices — up to 8 configurable slots per library type.
+  // Column labels (coating name + area spec) are defined in CoatingPriceLabel.
+  coatingPrice1 Decimal? @db.Decimal(10, 2)
+  coatingPrice2 Decimal? @db.Decimal(10, 2)
+  coatingPrice3 Decimal? @db.Decimal(10, 2)
+  coatingPrice4 Decimal? @db.Decimal(10, 2)
+  coatingPrice5 Decimal? @db.Decimal(10, 2)
+  coatingPrice6 Decimal? @db.Decimal(10, 2)
+  coatingPrice7 Decimal? @db.Decimal(10, 2)
+  coatingPrice8 Decimal? @db.Decimal(10, 2)
+
+  // DRT (Diamond Resistant Technology) vendor prices — valves only.
+  // Selling prices auto-calculated as cost × 1.3.
+  drtCostLower     Decimal? @db.Decimal(10, 2)
+  drtCostHigher    Decimal? @db.Decimal(10, 2)
+  drtSellingLower  Decimal? @db.Decimal(10, 2)
+  drtSellingHigher Decimal? @db.Decimal(10, 2)
 
   isActive Boolean @default(true)
 
@@ -529,9 +539,22 @@ model ProductLibraryItem {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  @@unique([libraryType, libraryNo])
+  @@unique([libraryType, catalogSource, libraryNo])
   @@index([libraryType])
   @@map("product_library_items")
+}
+
+// Configures what each coating price slot means per library type.
+// Replaces VFP's librarycontrol.c1-c8 / a1-a8 dynamic label system.
+model CoatingPriceLabel {
+  id          String             @id @default(cuid())
+  libraryType ProductLibraryType
+  slotNumber  Int                // 1-8
+  coatingName String             // e.g. "I 222M", "505", "Nickel"
+  areaSpec    String             // e.g. "I.D.", "O.D.", "Full"
+
+  @@unique([libraryType, slotNumber])
+  @@map("coating_price_labels")
 }
 
 // ============================================================
