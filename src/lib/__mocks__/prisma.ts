@@ -8,6 +8,7 @@ function createModelMock() {
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
+    deleteMany: vi.fn(),
     count: vi.fn(),
     upsert: vi.fn(),
   };
