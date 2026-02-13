@@ -30,4 +30,7 @@ export const prisma = {
   order: createModelMock(),
   orderDetail: createModelMock(),
   orderStatusHistory: createModelMock(),
+  orderProcessStep: createModelMock(),
+  processTemplate: createModelMock(),
+  processTemplateStep: createModelMock(),
 };
