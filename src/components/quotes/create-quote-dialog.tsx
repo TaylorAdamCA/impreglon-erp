@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Plus, Search } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -77,6 +78,9 @@ export function CreateQuoteDialog() {
       if (res.ok) {
         const newQuote = await res.json();
         router.push("/quotes/" + newQuote.id);
+      } else {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error ?? "Failed to create quote");
       }
     } finally {
       setIsCreating(false);

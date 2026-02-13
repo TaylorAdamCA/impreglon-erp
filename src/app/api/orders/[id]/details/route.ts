@@ -1,7 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { quoteComponentSchema } from "@/lib/validations/quote";
+import { orderDetailSchema } from "@/lib/validations/order";
+
+async function recalculateOrderTotals(orderId: string) {
+  const details = await prisma.orderDetail.findMany({
+    where: { orderId },
+    select: { lineTotal: true },
+  });
+  const orderTotal = details.reduce(
+    (sum, d) => sum + Number(d.lineTotal),
+    0
+  );
+
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { gstRate: true },
+  });
+  const gstRate = Number(order?.gstRate ?? 0);
+  const gstAmount = parseFloat((orderTotal * gstRate / 100).toFixed(2));
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { orderTotal, gstAmount },
+  });
+}
 
 export async function POST(
   request: NextRequest,
@@ -14,20 +37,20 @@ export async function POST(
 
   const { id } = await params;
 
-  const quote = await prisma.quote.findUnique({ where: { id } });
-  if (!quote) {
-    return NextResponse.json({ error: "Quote not found" }, { status: 404 });
+  const order = await prisma.order.findUnique({ where: { id } });
+  if (!order) {
+    return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
 
-  if (quote.status !== "DRAFT") {
+  if (order.status !== "PENDING") {
     return NextResponse.json(
-      { error: "Only draft quotes can be edited" },
+      { error: "Only pending orders can be edited" },
       { status: 400 }
     );
   }
 
   const body = await request.json();
-  const result = quoteComponentSchema.safeParse(body);
+  const result = orderDetailSchema.safeParse(body);
 
   if (!result.success) {
     return NextResponse.json(
@@ -36,13 +59,13 @@ export async function POST(
     );
   }
 
-  const { description, quantity, libraryType, libraryItemId, coatingSlot } =
+  const { description, quantity, coating, libraryType, libraryItemId, coatingSlot } =
     result.data;
   let { unitPrice } = result.data;
 
   // Auto-increment lineNumber
-  const max = await prisma.quoteComponent.findFirst({
-    where: { quoteId: id },
+  const max = await prisma.orderDetail.findFirst({
+    where: { orderId: id },
     orderBy: { lineNumber: "desc" },
     select: { lineNumber: true },
   });
@@ -75,32 +98,22 @@ export async function POST(
 
   const lineTotal = Math.round(quantity * unitPrice * 100) / 100;
 
-  const component = await prisma.quoteComponent.create({
+  const detail = await prisma.orderDetail.create({
     data: {
-      quoteId: id,
+      orderId: id,
       lineNumber,
       description,
       quantity,
       unitPrice,
       lineTotal,
+      coating: coating || null,
       libraryType: libraryType || null,
       libraryItemId: libraryItemId || null,
     },
   });
 
-  // Recalculate quoteTotal
-  const components = await prisma.quoteComponent.findMany({
-    where: { quoteId: id },
-    select: { lineTotal: true },
-  });
-  const quoteTotal = components.reduce(
-    (sum, c) => sum + Number(c.lineTotal),
-    0
-  );
-  await prisma.quote.update({
-    where: { id },
-    data: { quoteTotal },
-  });
+  // Recalculate orderTotal + gstAmount
+  await recalculateOrderTotals(id);
 
-  return NextResponse.json(component, { status: 201 });
+  return NextResponse.json(detail, { status: 201 });
 }

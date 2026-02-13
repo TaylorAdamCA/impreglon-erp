@@ -61,7 +61,7 @@ interface ProductsApiResponse {
 // -- Props --
 
 interface AddItemDialogProps {
-  quoteId: string;
+  orderId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -71,7 +71,7 @@ type DialogMode = "library" | "custom";
 // -- Component --
 
 export function AddItemDialog({
-  quoteId,
+  orderId,
   open,
   onOpenChange,
 }: AddItemDialogProps) {
@@ -97,6 +97,7 @@ export function AddItemDialog({
 
   // Custom mode state
   const [customDescription, setCustomDescription] = useState("");
+  const [customCoating, setCustomCoating] = useState("");
   const [customQuantity, setCustomQuantity] = useState("1");
   const [customUnitPrice, setCustomUnitPrice] = useState("");
 
@@ -116,6 +117,7 @@ export function AddItemDialog({
       setSelectedCoatingSlot(null);
       setLibraryQuantity("1");
       setCustomDescription("");
+      setCustomCoating("");
       setCustomQuantity("1");
       setCustomUnitPrice("");
       setSubmitting(false);
@@ -207,7 +209,7 @@ export function AddItemDialog({
     setSubmitting(true);
     try {
       const description = `${selectedProduct.description} - ${selectedCoating.coatingName}`;
-      const res = await fetch(`/api/quotes/${quoteId}/components`, {
+      const res = await fetch(`/api/orders/${orderId}/details`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -227,7 +229,7 @@ export function AddItemDialog({
         return;
       }
 
-      toast.success("Item added to quote");
+      toast.success("Item added to order");
       router.refresh();
       onOpenChange(false);
     } catch {
@@ -258,13 +260,14 @@ export function AddItemDialog({
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/quotes/${quoteId}/components`, {
+      const res = await fetch(`/api/orders/${orderId}/details`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           description: customDescription.trim(),
           quantity: qty,
           unitPrice: price,
+          coating: customCoating.trim() || undefined,
         }),
       });
 
@@ -274,7 +277,7 @@ export function AddItemDialog({
         return;
       }
 
-      toast.success("Item added to quote");
+      toast.success("Item added to order");
       router.refresh();
       onOpenChange(false);
     } catch {
@@ -545,6 +548,15 @@ export function AddItemDialog({
                 onChange={(e) => setCustomDescription(e.target.value)}
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="custom-coating">Coating</Label>
+              <Input
+                id="custom-coating"
+                placeholder="Enter coating type (optional)..."
+                value={customCoating}
+                onChange={(e) => setCustomCoating(e.target.value)}
+              />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="custom-quantity">Quantity</Label>
@@ -605,7 +617,7 @@ export function AddItemDialog({
               }
             >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Add to Quote
+              Add to Order
             </Button>
           ) : (
             <Button
@@ -617,7 +629,7 @@ export function AddItemDialog({
               }
             >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Add to Quote
+              Add to Order
             </Button>
           )}
         </DialogFooter>

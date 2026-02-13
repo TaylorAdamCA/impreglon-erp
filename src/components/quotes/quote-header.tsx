@@ -50,6 +50,31 @@ export function QuoteHeader({ quote, canApprove }: QuoteHeaderProps) {
     }
   }
 
+  async function handleConvertToOrder() {
+    if (!window.confirm("Convert this quote to an order?")) return;
+
+    setLoadingAction("convert");
+    try {
+      const res = await fetch(`/api/quotes/${quote.id}/convert`, {
+        method: "POST",
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data.error ?? "Failed to convert quote");
+        return;
+      }
+
+      const newOrder = await res.json();
+      toast.success("Quote converted to order successfully");
+      router.push(`/orders/${newOrder.id}`);
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setLoadingAction(null);
+    }
+  }
+
   async function handleDelete() {
     if (!window.confirm("Delete this quote? This cannot be undone.")) return;
 
@@ -181,9 +206,15 @@ export function QuoteHeader({ quote, canApprove }: QuoteHeaderProps) {
           </>
         )}
         {quote.status === "APPROVED" && (
-          <p className="text-sm text-muted-foreground">
-            This quote has been approved
-          </p>
+          <Button
+            onClick={handleConvertToOrder}
+            disabled={loadingAction !== null}
+          >
+            {loadingAction === "convert" && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
+            Convert to Order
+          </Button>
         )}
       </div>
     </div>
