@@ -27,4 +27,7 @@ export const prisma = {
   quote: createModelMock(),
   quoteComponent: createModelMock(),
   quoteDetail: createModelMock(),
+  order: createModelMock(),
+  orderDetail: createModelMock(),
+  orderStatusHistory: createModelMock(),
 };
