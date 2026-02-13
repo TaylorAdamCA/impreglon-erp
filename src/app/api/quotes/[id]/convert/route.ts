@@ -61,6 +61,12 @@ export async function POST(
   // Copy quote components to order details
   for (let i = 0; i < quote.components.length; i++) {
     const comp = quote.components[i];
+    // Extract coating name from description (format: "Product - Coating")
+    let coating: string | null = null;
+    if (comp.libraryType && comp.description.includes(" - ")) {
+      coating = comp.description.split(" - ").slice(1).join(" - ");
+    }
+
     await prisma.orderDetail.create({
       data: {
         orderId: order.id,
@@ -69,6 +75,7 @@ export async function POST(
         quantity: comp.quantity,
         unitPrice: Number(comp.unitPrice),
         lineTotal: Number(comp.lineTotal),
+        coating,
         libraryType: comp.libraryType,
         libraryItemId: comp.libraryItemId,
       },
