@@ -24,4 +24,7 @@ export const prisma = {
   contact: createModelMock(),
   shipToAddress: createModelMock(),
   carrier: createModelMock(),
+  quote: createModelMock(),
+  quoteComponent: createModelMock(),
+  quoteDetail: createModelMock(),
 };
