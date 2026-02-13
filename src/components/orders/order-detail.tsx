@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { OrderLineItems } from "./order-line-items";
+import { AddItemDialog } from "./add-item-dialog";
 
 interface OrderDetailProps {
   orderId: string;
@@ -29,9 +30,11 @@ export function OrderDetail({ orderId, details, isPending }: OrderDetailProps) {
         isPending={isPending}
         onAddItem={() => setAddItemOpen(true)}
       />
-      {/* AddItemDialog will be wired in Task 9 */}
-      {/* Placeholder: addItemOpen state is ready for Task 9 integration */}
-      {addItemOpen && null}
+      <AddItemDialog
+        orderId={orderId}
+        open={addItemOpen}
+        onOpenChange={setAddItemOpen}
+      />
     </>
   );
 }
