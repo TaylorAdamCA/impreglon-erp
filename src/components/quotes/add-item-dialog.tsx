@@ -214,6 +214,7 @@ export function AddItemDialog({
           description,
           quantity: qty,
           unitPrice: 0,
+          coating: selectedCoating.coatingName,
           libraryType,
           libraryItemId: selectedProduct.id,
           coatingSlot: selectedCoatingSlot,
