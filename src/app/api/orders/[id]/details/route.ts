@@ -9,7 +9,7 @@ async function recalculateOrderTotals(orderId: string) {
     select: { lineTotal: true },
   });
   const orderTotal = details.reduce(
-    (sum: number, d: { lineTotal: number }) => sum + Number(d.lineTotal),
+    (sum, d) => sum + Number(d.lineTotal),
     0
   );
 

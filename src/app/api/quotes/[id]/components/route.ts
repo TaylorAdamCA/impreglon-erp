@@ -94,7 +94,7 @@ export async function POST(
     select: { lineTotal: true },
   });
   const quoteTotal = components.reduce(
-    (sum: number, c: { lineTotal: number }) => sum + Number(c.lineTotal),
+    (sum, c) => sum + Number(c.lineTotal),
     0
   );
   await prisma.quote.update({
