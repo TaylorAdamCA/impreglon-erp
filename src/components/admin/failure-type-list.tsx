@@ -25,7 +25,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
-interface FailureType {
+export interface FailureType {
   id: string;
   code: string;
   description: string;
@@ -75,6 +75,10 @@ export function FailureTypeList({
   useEffect(() => {
     if (dialogOpen) {
       resetForm();
+    } else {
+      setCode("");
+      setDescription("");
+      setError("");
     }
   }, [dialogOpen, resetForm]);
 
