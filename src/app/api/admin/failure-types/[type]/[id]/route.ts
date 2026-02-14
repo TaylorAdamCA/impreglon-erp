@@ -4,6 +4,24 @@ import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/permissions";
 import { updateFailureTypeSchema, FAILURE_TYPE_CATEGORIES } from "@/lib/validations/failure-type";
 
+async function findFailureType(type: string, id: string) {
+  if (type === "coating") {
+    return prisma.coatingFailure.findUnique({ where: { id } });
+  }
+  return prisma.methodFailure.findUnique({ where: { id } });
+}
+
+async function updateFailureType(
+  type: string,
+  id: string,
+  data: { code?: string; description?: string; isActive?: boolean }
+) {
+  if (type === "coating") {
+    return prisma.coatingFailure.update({ where: { id }, data });
+  }
+  return prisma.methodFailure.update({ where: { id }, data });
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ type: string; id: string }> }
@@ -24,9 +42,7 @@ export async function PUT(
     return NextResponse.json({ error: "Invalid failure type category" }, { status: 400 });
   }
 
-  const model = type === "coating" ? prisma.coatingFailure : prisma.methodFailure;
-
-  const existing = await model.findUnique({ where: { id } });
+  const existing = await findFailureType(type, id);
   if (!existing) {
     return NextResponse.json({ error: "Failure type not found" }, { status: 404 });
   }
@@ -41,13 +57,10 @@ export async function PUT(
     );
   }
 
-  const updated = await model.update({
-    where: { id },
-    data: {
-      code: result.data.code,
-      description: result.data.description,
-      ...(result.data.isActive !== undefined ? { isActive: result.data.isActive } : {}),
-    },
+  const updated = await updateFailureType(type, id, {
+    code: result.data.code,
+    description: result.data.description,
+    ...(result.data.isActive !== undefined ? { isActive: result.data.isActive } : {}),
   });
 
   return NextResponse.json(updated);
@@ -73,17 +86,12 @@ export async function DELETE(
     return NextResponse.json({ error: "Invalid failure type category" }, { status: 400 });
   }
 
-  const model = type === "coating" ? prisma.coatingFailure : prisma.methodFailure;
-
-  const existing = await model.findUnique({ where: { id } });
+  const existing = await findFailureType(type, id);
   if (!existing) {
     return NextResponse.json({ error: "Failure type not found" }, { status: 404 });
   }
 
-  await model.update({
-    where: { id },
-    data: { isActive: false },
-  });
+  await updateFailureType(type, id, { isActive: false });
 
   return new NextResponse(null, { status: 204 });
 }
