@@ -54,6 +54,17 @@ export function QaInspectionTable({
       return;
     }
 
+    const detail = details.find((d) => d.id === detailId);
+    if (detail) {
+      const remaining = detail.quantity - detail.passedQty - detail.reworkQty;
+      if (currentPass + reworkQty > remaining) {
+        toast.error(
+          `Total (${currentPass + reworkQty}) exceeds remaining quantity (${remaining})`
+        );
+        return;
+      }
+    }
+
     setLoadingId(detailId);
     try {
       const body: Record<string, unknown> = { detailId, currentPass };

@@ -83,13 +83,19 @@ export function ReworkPlanDialog({
     setOperations("");
     setDepartment("");
 
+    const abortController = new AbortController();
+
     // Fetch lookups
     async function fetchLookups() {
       setLoadingLookups(true);
       try {
         const [templatesRes, failuresRes] = await Promise.all([
-          fetch("/api/admin/process-templates"),
-          fetch("/api/admin/failure-types"),
+          fetch("/api/admin/process-templates", {
+            signal: abortController.signal,
+          }),
+          fetch("/api/admin/failure-types", {
+            signal: abortController.signal,
+          }),
         ]);
 
         if (templatesRes.ok) {
@@ -113,13 +119,16 @@ export function ReworkPlanDialog({
           );
         }
       } catch {
-        // Silently fail — dropdowns will be empty
+        // Silently fail — dropdowns will be empty (or aborted)
       } finally {
-        setLoadingLookups(false);
+        if (!abortController.signal.aborted) {
+          setLoadingLookups(false);
+        }
       }
     }
 
     fetchLookups();
+    return () => abortController.abort();
   }, [open]);
 
   async function handleSubmit() {
