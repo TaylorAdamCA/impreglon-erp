@@ -100,7 +100,7 @@ export function ShopQaStatus({
             <div
               className="h-2 rounded-full bg-green-600 transition-all"
               style={{
-                width: `${(passedQty / totalQty) * 100}%`,
+                width: `${totalQty > 0 ? (passedQty / totalQty) * 100 : 0}%`,
               }}
             />
           </div>
