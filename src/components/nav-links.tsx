@@ -15,6 +15,7 @@ import {
   Package,
   Wrench,
   Settings,
+  ListChecks,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -75,6 +76,7 @@ const navGroups: NavGroup[] = [
   {
     title: "Admin",
     items: [
+      { label: "Process Templates", href: "/admin/process-templates", icon: ListChecks },
       { label: "Settings", href: "/settings", icon: Settings },
     ],
   },
