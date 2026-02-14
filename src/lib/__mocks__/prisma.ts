@@ -34,4 +34,8 @@ export const prisma = {
   orderProcessStep: createModelMock(),
   processTemplate: createModelMock(),
   processTemplateStep: createModelMock(),
+  rework: createModelMock(),
+  reworkMemo: createModelMock(),
+  coatingFailure: createModelMock(),
+  methodFailure: createModelMock(),
 };
