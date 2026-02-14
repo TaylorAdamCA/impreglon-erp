@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { ShopOrderHeader } from "@/components/shop/shop-order-header";
 import { ShopReceiving } from "@/components/shop/shop-receiving";
 import { ShopProcessControl } from "@/components/shop/shop-process-control";
+import { ShopQaStatus } from "@/components/shop/shop-qa-status";
 
 interface ShopOrderDetailPageProps {
   params: Promise<{ id: string }>;
@@ -32,6 +33,10 @@ export default async function ShopOrderDetailPage({
         orderBy: { changedAt: "desc" },
         include: { changedBy: { select: { username: true } } },
       },
+      reworkItems: {
+        include: { reworkMemo: true },
+        orderBy: { createdAt: "desc" },
+      },
     },
   });
 
@@ -59,6 +64,23 @@ export default async function ShopOrderDetailPage({
     quantity: d.quantity,
     unitPrice: d.unitPrice.toString(),
     receivedAt: d.receivedAt?.toISOString() ?? null,
+    passedQty: d.passedQty,
+    reworkQty: d.reworkQty,
+  }));
+
+  const serializedReworkItems = order.reworkItems.map((r) => ({
+    id: r.id,
+    reworkQty: r.reworkQty,
+    status: r.status,
+    resolved: r.resolved,
+    resolvedAt: r.resolvedAt?.toISOString() ?? null,
+    orderDetailId: r.orderDetailId,
+    reworkMemo: r.reworkMemo
+      ? {
+          id: r.reworkMemo.id,
+          productType: r.reworkMemo.productType,
+        }
+      : null,
   }));
 
   const serializedSteps = order.processSteps.map((s) => ({
@@ -91,6 +113,12 @@ export default async function ShopOrderDetailPage({
         templateName={order.processTemplate}
         steps={serializedSteps}
         isShipped={order.status === "SHIPPED"}
+      />
+
+      <ShopQaStatus
+        orderId={order.id}
+        details={serializedDetails}
+        reworkItems={serializedReworkItems}
       />
     </div>
   );
