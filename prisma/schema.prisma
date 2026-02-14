@@ -506,6 +506,30 @@ model ReworkMemo {
   @@map("rework_memos")
 }
 
+model CoatingFailure {
+  id          String  @id @default(cuid())
+  code        String  @unique
+  description String
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("coating_failures")
+}
+
+model MethodFailure {
+  id          String  @id @default(cuid())
+  code        String  @unique
+  description String
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("method_failures")
+}
+
 // ============================================================
 // PRODUCT LIBRARIES
 // ============================================================
@@ -757,22 +781,6 @@ model Holiday {
   isActive    Boolean     @default(true)
 
   @@map("holidays")
-}
-
-model CoatingFailureType {
-  id          String @id @default(cuid())
-  code        String @unique
-  description String
-
-  @@map("coating_failure_types")
-}
-
-model MethodFailureType {
-  id          String @id @default(cuid())
-  code        String @unique
-  description String
-
-  @@map("method_failure_types")
 }
 
 model Department {
