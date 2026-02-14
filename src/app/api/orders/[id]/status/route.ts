@@ -98,6 +98,32 @@ export async function PATCH(
     return NextResponse.json(updated);
   }
 
+  if (action === "ready") {
+    if (order.status !== "IN_PROGRESS") {
+      return NextResponse.json(
+        { error: "Only in-progress orders can be marked ready to ship" },
+        { status: 400 }
+      );
+    }
+
+    const updated = await prisma.order.update({
+      where: { id },
+      data: { status: "READY_TO_SHIP" },
+    });
+
+    await prisma.orderStatusHistory.create({
+      data: {
+        orderId: id,
+        fromStatus: "IN_PROGRESS",
+        toStatus: "READY_TO_SHIP",
+        changedById: session.user.id,
+        notes: notes || null,
+      },
+    });
+
+    return NextResponse.json(updated);
+  }
+
   return NextResponse.json(
     { error: "Validation failed" },
     { status: 400 }

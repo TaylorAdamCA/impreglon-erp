@@ -492,11 +492,11 @@ describe("orderStatusSchema", () => {
 // ORDER_STATUS_ACTIONS constant
 // ---------------------------------------------------------------------------
 describe("ORDER_STATUS_ACTIONS", () => {
-  it("contains exactly 'start' and 'complete'", () => {
-    expect(ORDER_STATUS_ACTIONS).toEqual(["start", "complete"]);
+  it("contains exactly 'start', 'complete', and 'ready'", () => {
+    expect(ORDER_STATUS_ACTIONS).toEqual(["start", "complete", "ready"]);
   });
 
-  it("has length of 2", () => {
-    expect(ORDER_STATUS_ACTIONS).toHaveLength(2);
+  it("has length of 3", () => {
+    expect(ORDER_STATUS_ACTIONS).toHaveLength(3);
   });
 });

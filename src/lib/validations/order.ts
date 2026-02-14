@@ -33,7 +33,7 @@ export const orderDetailSchema = z.object({
 
 export type OrderDetailValues = z.infer<typeof orderDetailSchema>;
 
-export const ORDER_STATUS_ACTIONS = ["start", "complete"] as const;
+export const ORDER_STATUS_ACTIONS = ["start", "complete", "ready"] as const;
 
 export const orderStatusSchema = z.object({
   action: z.enum(ORDER_STATUS_ACTIONS),

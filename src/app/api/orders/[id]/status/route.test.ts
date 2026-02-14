@@ -166,6 +166,74 @@ describe("PATCH /api/orders/[id]/status", () => {
     });
   });
 
+  describe("ready", () => {
+    it("returns 400 when order is not IN_PROGRESS", async () => {
+      mockPrisma.order.findUnique.mockResolvedValueOnce({
+        id: "order-1",
+        status: "PENDING",
+      } as never);
+
+      const res = await PATCH(makeRequest({ action: "ready" }), {
+        params: paramsPromise,
+      });
+
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toBe("Only in-progress orders can be marked ready to ship");
+    });
+
+    it("transitions IN_PROGRESS -> READY_TO_SHIP", async () => {
+      mockPrisma.order.findUnique.mockResolvedValueOnce({
+        id: "order-1",
+        status: "IN_PROGRESS",
+      } as never);
+      mockPrisma.order.update.mockResolvedValueOnce({
+        id: "order-1",
+        status: "READY_TO_SHIP",
+      } as never);
+      mockPrisma.orderStatusHistory.create.mockResolvedValueOnce({} as never);
+
+      const res = await PATCH(makeRequest({ action: "ready" }), {
+        params: paramsPromise,
+      });
+
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.status).toBe("READY_TO_SHIP");
+      expect(mockPrisma.order.update).toHaveBeenCalledWith({
+        where: { id: "order-1" },
+        data: { status: "READY_TO_SHIP" },
+      });
+    });
+
+    it("creates history record with correct data on ready", async () => {
+      mockPrisma.order.findUnique.mockResolvedValueOnce({
+        id: "order-1",
+        status: "IN_PROGRESS",
+      } as never);
+      mockPrisma.order.update.mockResolvedValueOnce({
+        id: "order-1",
+        status: "READY_TO_SHIP",
+      } as never);
+      mockPrisma.orderStatusHistory.create.mockResolvedValueOnce({} as never);
+
+      await PATCH(
+        makeRequest({ action: "ready", notes: "All processes complete" }),
+        { params: paramsPromise }
+      );
+
+      expect(mockPrisma.orderStatusHistory.create).toHaveBeenCalledWith({
+        data: {
+          orderId: "order-1",
+          fromStatus: "IN_PROGRESS",
+          toStatus: "READY_TO_SHIP",
+          changedById: "test-user-id",
+          notes: "All processes complete",
+        },
+      });
+    });
+  });
+
   describe("complete", () => {
     it("returns 400 when order is not IN_PROGRESS", async () => {
       mockPrisma.order.findUnique.mockResolvedValueOnce({
