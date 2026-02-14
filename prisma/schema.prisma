@@ -110,6 +110,7 @@ model User {
   orderLocks     OrderLock[]
   reworkPlans    ReworkMemo[]      @relation("ReworkCreatedBy")
   statusChanges  OrderStatusHistory[]
+  processSteps   OrderProcessStep[] @relation("ProcessStepCompletedBy")
 
   @@map("users")
 }
@@ -309,6 +310,7 @@ model Order {
   components      ListComponent[]
   statusHistory   OrderStatusHistory[]
   reworkItems     Rework[]
+  processSteps    OrderProcessStep[]
 
   @@index([customerId])
   @@index([status])
@@ -347,6 +349,8 @@ model OrderDetail {
   drtType            String?
   additionalTypeFlag String?
   hasInternals       Boolean @default(false)
+
+  receivedAt DateTime?
 
   legacyDetailNo Int?
 
@@ -644,6 +648,28 @@ model ProcessTemplateStep {
 
   @@index([templateId])
   @@map("process_template_steps")
+}
+
+model OrderProcessStep {
+  id              String    @id @default(cuid())
+  orderId         String
+  /// Snapshot field — intentionally no @relation to ProcessTemplateStep.
+  /// Preserves step data if template is edited/deleted after assignment.
+  templateStepId  String
+  stepNumber      Int
+  operationName   String
+  completedAt     DateTime?
+  completedById   String?
+  notes           String?
+
+  order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  completedBy User?       @relation("ProcessStepCompletedBy", fields: [completedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@map("order_process_steps")
 }
 
 // ============================================================

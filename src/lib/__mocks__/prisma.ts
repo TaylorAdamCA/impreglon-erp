@@ -8,6 +8,7 @@ function createModelMock() {
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
+    deleteMany: vi.fn(),
     count: vi.fn(),
     upsert: vi.fn(),
   };
@@ -30,4 +31,7 @@ export const prisma = {
   order: createModelMock(),
   orderDetail: createModelMock(),
   orderStatusHistory: createModelMock(),
+  orderProcessStep: createModelMock(),
+  processTemplate: createModelMock(),
+  processTemplateStep: createModelMock(),
 };
