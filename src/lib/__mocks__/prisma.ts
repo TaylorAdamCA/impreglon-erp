@@ -38,4 +38,5 @@ export const prisma = {
   reworkMemo: createModelMock(),
   coatingFailure: createModelMock(),
   methodFailure: createModelMock(),
+  taxRate: createModelMock(),
 };

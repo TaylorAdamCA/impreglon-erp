@@ -300,6 +300,20 @@ model Order {
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
+  // Invoice fields
+  invoiceNo          Int?       @unique
+  invoiceDate        DateTime?  @db.Date
+  invoiceDraftedBy   String?
+  invoiceDraftedAt   DateTime?
+  invoiceModifiedBy  String?
+  invoiceModifiedAt  DateTime?
+  invoiceApprovedBy  String?
+  invoiceApprovedAt  DateTime?
+  invoiceFinalizedBy String?
+  invoiceFinalizedAt DateTime?
+  invoiceNotes       String?    @db.Text
+  invoicePdfUrl      String?
+
   customer      Customer       @relation(fields: [customerId], references: [id])
   shipToAddress ShipToAddress? @relation(fields: [shipToAddressId], references: [id])
   createdBy     User           @relation("OrderCreatedBy", fields: [createdById], references: [id])
