@@ -6,14 +6,26 @@ function trimOrNull(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-export function mapReference(record: DbfRecord) {
-  if (!record.custno || record.custno === 0) return null;
+/**
+ * VFP CUST_REFERENCES.DBF fields:
+ * CUSTNO(C:9), REF_LABEL1-5(C:15)
+ *
+ * Each row can have up to 5 reference labels.
+ * Each non-empty label becomes a separate CustomerReference record.
+ */
 
-  const reference = trimOrNull(record.reference);
-  if (!reference) return null;
+export function mapReferences(
+  record: DbfRecord
+): Array<{ custCode: string; reference: string }> {
+  const custCode = trimOrNull(record.CUSTNO);
+  if (!custCode) return [];
 
-  return {
-    custNo: record.custno as number,
-    reference,
-  };
+  const results: Array<{ custCode: string; reference: string }> = [];
+  for (let i = 1; i <= 5; i++) {
+    const label = trimOrNull(record[`REF_LABEL${i}`]);
+    if (label) {
+      results.push({ custCode, reference: label });
+    }
+  }
+  return results;
 }

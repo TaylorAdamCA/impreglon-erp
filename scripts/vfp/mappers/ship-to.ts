@@ -6,17 +6,29 @@ function trimOrNull(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+/**
+ * VFP SHIPPING.DBF fields:
+ * SHIPNO(I:4), SHIPTO1(C:35), SHIPTO2(C:25), SHIPTO3(C:25), CUSTNO(C:9)
+ *
+ * These are free-form text lines, not structured address fields.
+ * SHIPTO1 → name, SHIPTO2 → address1, SHIPTO3 → city
+ */
+
 export function mapShipTo(record: DbfRecord) {
-  if (!record.custno || record.custno === 0) return null;
+  const custCode = trimOrNull(record.CUSTNO);
+  if (!custCode) return null;
+
+  const name = trimOrNull(record.SHIPTO1);
+  if (!name) return null;
 
   return {
-    custNo: record.custno as number,
-    name: trimOrNull(record.shipname) ?? "",
-    address1: trimOrNull(record.address1),
-    address2: trimOrNull(record.address2),
-    city: trimOrNull(record.city),
-    province: trimOrNull(record.province),
-    postalCode: trimOrNull(record.postal),
+    custCode,
+    name,
+    address1: trimOrNull(record.SHIPTO2) ?? "",
+    address2: null,
+    city: trimOrNull(record.SHIPTO3) ?? "",
+    province: null,
+    postalCode: null,
     isDefault: false,
   };
 }

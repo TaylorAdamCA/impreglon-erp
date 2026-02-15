@@ -2,31 +2,33 @@ import { describe, it, expect } from "vitest";
 import { mapContact } from "./contacts";
 
 describe("mapContact", () => {
-  it("maps VFP contact record with trimming", () => {
+  it("maps VFP contact record with uppercase fields", () => {
     const result = mapContact({
-      custno: 101,
-      contactname: "John Smith        ",
-      title: "VP Operations     ",
-      phone: "403-555-9999  ",
-      email: "john@acme.com     ",
-      department: "Operations    ",
+      CUSTNO: "GUIBE    ",
+      ATTENTION: "John Smith                    ",
+      EMAIL: "john@guiberson.com                      ",
+      PHONE: "403-555-9999  ",
+      FAX: "403-555-9998  ",
+      HOMEOFFICE: "Calgary Office      ",
     });
     expect(result).toEqual({
-      custNo: 101,
+      custCode: "GUIBE",
       name: "John Smith",
-      title: "VP Operations",
+      title: null,
       phone: "403-555-9999",
-      email: "john@acme.com",
-      department: "Operations",
+      email: "john@guiberson.com",
+      department: "Calgary Office",
       isPrimary: false,
     });
   });
 
-  it("returns null for records with custno 0", () => {
-    expect(mapContact({ custno: 0, contactname: "Test" })).toBeNull();
+  it("returns null for records with empty CUSTNO", () => {
+    expect(mapContact({ CUSTNO: "         ", ATTENTION: "Test" })).toBeNull();
   });
 
-  it("returns null for records with empty contactname", () => {
-    expect(mapContact({ custno: 1, contactname: "        " })).toBeNull();
+  it("returns null for records with empty ATTENTION", () => {
+    expect(
+      mapContact({ CUSTNO: "GUIBE", ATTENTION: "                              " })
+    ).toBeNull();
   });
 });

@@ -3,34 +3,34 @@ import { mapCustomer, isActiveCustomer } from "./customers";
 
 describe("mapCustomer", () => {
   const validRecord = {
-    custno: 101,
-    company: "Acme Oil Ltd          ",
-    address1: "123 Main St           ",
-    address2: "                      ",
-    city: "Calgary               ",
-    province: "AB    ",
-    postal: "T2P 1J9   ",
-    phone: "403-555-1234  ",
-    fax: "403-555-1235  ",
-    email: "info@acme.com         ",
-    terms: "Net 30    ",
-    notes: "Good customer",
+    CUSTNO: "GUIBE    ",
+    NAME: "Guiberson Ltd                           ",
+    ADDRESS: "123 Main St                   ",
+    ADDRESS2: "                              ",
+    CITY: "Calgary        ",
+    PROVINCE: "AB             ",
+    POSTALCODE: "T2P1J9 ",
+    PHONENO: "403-555-1234  ",
+    FAXNO: "403-555-1235  ",
+    EMAIL_ADD: "info@guiberson.com                                ",
+    CUSTMEMO: "Good customer",
+    ACTIVE: true,
   };
 
-  it("maps VFP customer record to Prisma CustomerCreateInput", () => {
+  it("maps VFP customer record with string custCode", () => {
     const result = mapCustomer(validRecord);
     expect(result).toEqual({
-      custNo: 101,
-      company: "Acme Oil Ltd",
+      custCode: "GUIBE",
+      company: "Guiberson Ltd",
       address1: "123 Main St",
       address2: null,
       city: "Calgary",
       province: "AB",
-      postalCode: "T2P 1J9",
+      postalCode: "T2P1J9",
       phone: "403-555-1234",
       fax: "403-555-1235",
-      email: "info@acme.com",
-      terms: "Net 30",
+      email: "info@guiberson.com",
+      terms: null,
       notes: "Good customer",
       isActive: true,
     });
@@ -38,34 +38,43 @@ describe("mapCustomer", () => {
 
   it("trims VFP character field padding", () => {
     const result = mapCustomer(validRecord);
-    expect(result?.company).toBe("Acme Oil Ltd");
+    expect(result?.custCode).toBe("GUIBE");
+    expect(result?.company).toBe("Guiberson Ltd");
     expect(result?.city).toBe("Calgary");
   });
 
   it("converts empty strings to null", () => {
-    const record = { ...validRecord, address2: "          ", fax: "" };
+    const record = { ...validRecord, ADDRESS2: "          ", FAXNO: "" };
     const result = mapCustomer(record);
     expect(result?.address2).toBeNull();
     expect(result?.fax).toBeNull();
   });
 
-  it("returns null for records with custno 0", () => {
-    const record = { ...validRecord, custno: 0 };
+  it("returns null for records with empty CUSTNO", () => {
+    const record = { ...validRecord, CUSTNO: "         " };
     const result = mapCustomer(record);
     expect(result).toBeNull();
   });
 });
 
 describe("isActiveCustomer", () => {
-  it("returns true for non-deleted records", () => {
-    expect(isActiveCustomer({ custno: 1, _deleted: false })).toBe(true);
+  it("returns true for active non-deleted records", () => {
+    expect(
+      isActiveCustomer({ CUSTNO: "GUIBE", ACTIVE: true, _deleted: false })
+    ).toBe(true);
   });
 
   it("returns false for deleted records", () => {
-    expect(isActiveCustomer({ custno: 1, _deleted: true })).toBe(false);
+    expect(
+      isActiveCustomer({ CUSTNO: "GUIBE", ACTIVE: true, _deleted: true })
+    ).toBe(false);
   });
 
-  it("returns false for records with custno 0", () => {
-    expect(isActiveCustomer({ custno: 0 })).toBe(false);
+  it("returns false for inactive records", () => {
+    expect(isActiveCustomer({ CUSTNO: "GUIBE", ACTIVE: false })).toBe(false);
+  });
+
+  it("returns false for records with empty CUSTNO", () => {
+    expect(isActiveCustomer({ CUSTNO: "         " })).toBe(false);
   });
 });

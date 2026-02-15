@@ -6,14 +6,20 @@ function trimOrNull(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+/**
+ * VFP CARRIERS.DBF fields (only 3!):
+ * CARRIERNAM(C:25), CARRIERNO(I:4), CUSTNO(C:9)
+ */
+
 export function mapCarrier(record: DbfRecord) {
-  if (!record.custno || record.custno === 0) return null;
+  const custCode = trimOrNull(record.CUSTNO);
+  if (!custCode) return null;
 
   return {
-    custNo: record.custno as number,
-    name: trimOrNull(record.carriername) ?? "",
-    account: trimOrNull(record.account),
-    phone: trimOrNull(record.phone),
+    custCode,
+    name: trimOrNull(record.CARRIERNAM) ?? "",
+    account: null,
+    phone: null,
     isDefault: false,
   };
 }

@@ -10,7 +10,7 @@ import { mapCustomer, isActiveCustomer } from "./vfp/mappers/customers";
 import { mapContact } from "./vfp/mappers/contacts";
 import { mapShipTo } from "./vfp/mappers/ship-to";
 import { mapCarrier } from "./vfp/mappers/carriers";
-import { mapReference } from "./vfp/mappers/references";
+import { mapReferences } from "./vfp/mappers/references";
 import { mapProduct } from "./vfp/mappers/products";
 import { mapTool, mapToolPart } from "./vfp/mappers/tools";
 import {
@@ -23,6 +23,9 @@ const VFP_DIR = String.raw`C:\Users\Taylor\Desktop\Misc\From Old PC\Work\Impregl
 const LIBRARIES_DIR = path.join(VFP_DIR, "Libraries");
 
 const prisma = new PrismaClient();
+
+// In-memory mapping: VFP custCode string → Prisma Customer.id (cuid)
+const custCodeMap = new Map<string, string>();
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -106,7 +109,7 @@ async function migrateOperations() {
 }
 
 // ---------------------------------------------------------------------------
-// 2. Customers (active only)
+// 2. Customers (active only) — builds custCodeMap for child entity linking
 // ---------------------------------------------------------------------------
 
 async function migrateCustomers() {
@@ -125,11 +128,12 @@ async function migrateCustomers() {
       skipped++;
       continue;
     }
-    await prisma.customer.upsert({
-      where: { custNo: mapped.custNo },
-      update: {},
-      create: mapped,
+
+    const { custCode, ...customerData } = mapped;
+    const customer = await prisma.customer.create({
+      data: customerData,
     });
+    custCodeMap.set(custCode, customer.id);
     imported++;
   }
 
@@ -137,7 +141,7 @@ async function migrateCustomers() {
 }
 
 // ---------------------------------------------------------------------------
-// 3. Contacts — link to customers via custNo lookup
+// 3. Contacts — link to customers via custCode → custCodeMap
 // ---------------------------------------------------------------------------
 
 async function migrateContacts() {
@@ -153,17 +157,15 @@ async function migrateContacts() {
       continue;
     }
 
-    const customer = await prisma.customer.findUnique({
-      where: { custNo: mapped.custNo },
-    });
-    if (!customer) {
+    const customerId = custCodeMap.get(mapped.custCode);
+    if (!customerId) {
       skipped++;
       continue;
     }
 
-    const { custNo, ...contactData } = mapped;
+    const { custCode, ...contactData } = mapped;
     await prisma.customerContact.create({
-      data: { customerId: customer.id, ...contactData },
+      data: { customerId, ...contactData },
     });
     imported++;
   }
@@ -172,7 +174,7 @@ async function migrateContacts() {
 }
 
 // ---------------------------------------------------------------------------
-// 4. Ship-to addresses — link to customers via custNo lookup
+// 4. Ship-to addresses — link to customers via custCode → custCodeMap
 // ---------------------------------------------------------------------------
 
 async function migrateShipToAddresses() {
@@ -188,22 +190,15 @@ async function migrateShipToAddresses() {
       continue;
     }
 
-    const customer = await prisma.customer.findUnique({
-      where: { custNo: mapped.custNo },
-    });
-    if (!customer) {
+    const customerId = custCodeMap.get(mapped.custCode);
+    if (!customerId) {
       skipped++;
       continue;
     }
 
-    const { custNo, ...shipToData } = mapped;
+    const { custCode, ...shipToData } = mapped;
     await prisma.shipToAddress.create({
-      data: {
-        customerId: customer.id,
-        ...shipToData,
-        address1: shipToData.address1 ?? "",
-        city: shipToData.city ?? "",
-      },
+      data: { customerId, ...shipToData },
     });
     imported++;
   }
@@ -212,7 +207,7 @@ async function migrateShipToAddresses() {
 }
 
 // ---------------------------------------------------------------------------
-// 5. Carriers — link to customers via custNo lookup
+// 5. Carriers — link to customers via custCode → custCodeMap
 // ---------------------------------------------------------------------------
 
 async function migrateCarriers() {
@@ -228,17 +223,15 @@ async function migrateCarriers() {
       continue;
     }
 
-    const customer = await prisma.customer.findUnique({
-      where: { custNo: mapped.custNo },
-    });
-    if (!customer) {
+    const customerId = custCodeMap.get(mapped.custCode);
+    if (!customerId) {
       skipped++;
       continue;
     }
 
-    const { custNo, ...carrierData } = mapped;
+    const { custCode, ...carrierData } = mapped;
     await prisma.carrier.create({
-      data: { customerId: customer.id, ...carrierData },
+      data: { customerId, ...carrierData },
     });
     imported++;
   }
@@ -247,7 +240,8 @@ async function migrateCarriers() {
 }
 
 // ---------------------------------------------------------------------------
-// 6. Customer references — link to customers via custNo lookup
+// 6. Customer references — link to customers via custCode → custCodeMap
+//    VFP has REF_LABEL1-5 per row, each becomes a separate reference
 // ---------------------------------------------------------------------------
 
 async function migrateReferences() {
@@ -257,25 +251,24 @@ async function migrateReferences() {
   let skipped = 0;
 
   for (const record of records) {
-    const mapped = mapReference(record);
-    if (!mapped) {
+    const refs = mapReferences(record);
+    if (refs.length === 0) {
       skipped++;
       continue;
     }
 
-    const customer = await prisma.customer.findUnique({
-      where: { custNo: mapped.custNo },
-    });
-    if (!customer) {
-      skipped++;
-      continue;
-    }
+    for (const ref of refs) {
+      const customerId = custCodeMap.get(ref.custCode);
+      if (!customerId) {
+        skipped++;
+        continue;
+      }
 
-    const { custNo, ...refData } = mapped;
-    await prisma.customerReference.create({
-      data: { customerId: customer.id, ...refData },
-    });
-    imported++;
+      await prisma.customerReference.create({
+        data: { customerId, reference: ref.reference },
+      });
+      imported++;
+    }
   }
 
   console.log(
@@ -413,10 +406,10 @@ async function main() {
   await migrateMethodFailures();
   await migrateOperations();
 
-  // 2. Customers (active only)
+  // 2. Customers (active only) — builds custCodeMap
   await migrateCustomers();
 
-  // 3-6. Customer child entities
+  // 3-6. Customer child entities (linked via custCodeMap)
   await migrateContacts();
   await migrateShipToAddresses();
   await migrateCarriers();

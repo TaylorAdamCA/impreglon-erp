@@ -1,57 +1,66 @@
 import { describe, it, expect } from "vitest";
-import { mapCoatingFailure, mapMethodFailure, mapOperation } from "./reference-data";
+import {
+  mapCoatingFailure,
+  mapMethodFailure,
+  mapOperation,
+} from "./reference-data";
 
 describe("mapCoatingFailure", () => {
-  it("maps VFP coating failure record", () => {
+  it("maps VFP coating failure with FAILNO and REASON", () => {
     const result = mapCoatingFailure({
-      code: "CF001     ",
-      description: "Adhesion Loss     ",
+      FAILNO: 1,
+      REASON: "Adhesion Loss       ",
     });
     expect(result).toEqual({
-      code: "CF001",
+      code: "1",
       description: "Adhesion Loss",
       isActive: true,
     });
   });
 
-  it("returns null for empty code", () => {
-    expect(mapCoatingFailure({ code: "    ", description: "Test" })).toBeNull();
+  it("returns null for FAILNO 0", () => {
+    expect(mapCoatingFailure({ FAILNO: 0, REASON: "Test" })).toBeNull();
+  });
+
+  it("uses FAILNO as description when REASON is empty", () => {
+    const result = mapCoatingFailure({ FAILNO: 5, REASON: "     " });
+    expect(result?.description).toBe("5");
   });
 });
 
 describe("mapMethodFailure", () => {
-  it("maps VFP method failure record", () => {
+  it("maps VFP method failure with FAILNO and REASON", () => {
     const result = mapMethodFailure({
-      code: "MF001     ",
-      description: "Process Error     ",
+      FAILNO: 3,
+      REASON: "Process Error       ",
     });
     expect(result).toEqual({
-      code: "MF001",
+      code: "3",
       description: "Process Error",
       isActive: true,
     });
   });
 
-  it("returns null for empty code", () => {
-    expect(mapMethodFailure({ code: "", description: "Test" })).toBeNull();
+  it("returns null for FAILNO 0", () => {
+    expect(mapMethodFailure({ FAILNO: 0, REASON: "Test" })).toBeNull();
   });
 });
 
 describe("mapOperation", () => {
-  it("maps VFP operation record", () => {
+  it("maps VFP operation with single OPERATION field", () => {
     const result = mapOperation({
-      code: "BLAST     ",
-      name: "Grit Blast        ",
-      description: "Surface prep      ",
+      OPERATION: "Grit Blast               ",
     });
     expect(result).toEqual({
-      code: "BLAST",
+      code: "Grit Blast",
       name: "Grit Blast",
-      description: "Surface prep",
+      description: null,
     });
   });
 
-  it("returns null for empty code", () => {
-    expect(mapOperation({ code: "   ", name: "Test" })).toBeNull();
+  it("returns null for empty OPERATION", () => {
+    expect(
+      mapOperation({ OPERATION: "                         " })
+    ).toBeNull();
   });
 });

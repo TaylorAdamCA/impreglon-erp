@@ -63,6 +63,10 @@ After every code change, run these checks before considering work complete:
 - `npm test` — all tests must pass
 - `npx next build` — build must succeed (once Prisma client is generated)
 
+## Code Review Policy
+
+When a code quality reviewer flags "important" recommendations that aren't addressed inline (e.g., because the plan spec was intentionally simpler), create GitHub backlog issues for them so they're tracked and not lost.
+
 ## Tool Paths
 
 - **GitHub CLI:** `"/c/Program Files/GitHub CLI/gh.exe"` (not in bash PATH — use full path)

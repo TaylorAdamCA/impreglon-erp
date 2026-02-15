@@ -9,7 +9,7 @@ export async function readDbfRecords(
   filePath: string,
   options?: { includeDeleted?: boolean }
 ): Promise<DbfRecord[]> {
-  const dbf = await DBFFile.open(filePath);
+  const dbf = await DBFFile.open(filePath, { readMode: "loose" });
   const records = (await dbf.readRecords()) as DbfRecord[];
 
   if (options?.includeDeleted) {

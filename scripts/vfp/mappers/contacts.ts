@@ -6,19 +6,26 @@ function trimOrNull(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-export function mapContact(record: DbfRecord) {
-  if (!record.custno || record.custno === 0) return null;
+/**
+ * VFP CUSTOMERCONTACTS.DBF fields:
+ * CONTACTNO(I:4), CUSTNO(C:9), ATTENTION(C:30),
+ * EMAIL(C:40), PHONE(C:14), FAX(C:14), HOMEOFFICE(C:20)
+ */
 
-  const name = trimOrNull(record.contactname);
+export function mapContact(record: DbfRecord) {
+  const custCode = trimOrNull(record.CUSTNO);
+  if (!custCode) return null;
+
+  const name = trimOrNull(record.ATTENTION);
   if (!name) return null;
 
   return {
-    custNo: record.custno as number,
+    custCode,
     name,
-    title: trimOrNull(record.title),
-    phone: trimOrNull(record.phone),
-    email: trimOrNull(record.email),
-    department: trimOrNull(record.department),
+    title: null,
+    phone: trimOrNull(record.PHONE),
+    email: trimOrNull(record.EMAIL),
+    department: trimOrNull(record.HOMEOFFICE),
     isPrimary: false,
   };
 }

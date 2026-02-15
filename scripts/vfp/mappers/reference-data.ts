@@ -6,32 +6,47 @@ function trimOrNull(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+/**
+ * VFP coatfailure.dbf / methodfailure.dbf fields:
+ * FAILNO(I:4), REASON(C:20)
+ *
+ * FAILNO is an integer ID used as the code.
+ * REASON is the description text.
+ */
+
 export function mapCoatingFailure(record: DbfRecord) {
-  const code = trimOrNull(record.code);
-  if (!code) return null;
+  const failNo = record.FAILNO as number;
+  if (!failNo || failNo === 0) return null;
   return {
-    code,
-    description: trimOrNull(record.description) ?? code,
+    code: String(failNo),
+    description: trimOrNull(record.REASON) ?? String(failNo),
     isActive: true,
   };
 }
 
 export function mapMethodFailure(record: DbfRecord) {
-  const code = trimOrNull(record.code);
-  if (!code) return null;
+  const failNo = record.FAILNO as number;
+  if (!failNo || failNo === 0) return null;
   return {
-    code,
-    description: trimOrNull(record.description) ?? code,
+    code: String(failNo),
+    description: trimOrNull(record.REASON) ?? String(failNo),
     isActive: true,
   };
 }
 
+/**
+ * VFP OPERATIONS.DBF fields:
+ * OPERATION(C:25) — single field only!
+ *
+ * Used as both code and name.
+ */
+
 export function mapOperation(record: DbfRecord) {
-  const code = trimOrNull(record.code);
-  if (!code) return null;
+  const operation = trimOrNull(record.OPERATION);
+  if (!operation) return null;
   return {
-    code,
-    name: trimOrNull(record.name) ?? code,
-    description: trimOrNull(record.description),
+    code: operation,
+    name: operation,
+    description: null,
   };
 }
