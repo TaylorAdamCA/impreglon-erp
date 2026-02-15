@@ -9,7 +9,8 @@
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "migrate:vfp": "npx tsx scripts/migrate-vfp.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
