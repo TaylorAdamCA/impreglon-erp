@@ -616,6 +616,7 @@ model Tool {
 
   parts       ToolPart[]
   assignments ToolAssignment[]
+  receipts    ToolReceipt[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -653,6 +654,20 @@ model ToolAssignment {
 
   @@index([orderId])
   @@map("tool_assignments")
+}
+
+model ToolReceipt {
+  id         String   @id @default(cuid())
+  toolId     String
+  receivedBy String
+  receivedAt DateTime @default(now())
+  condition  String?
+  notes      String?  @db.Text
+
+  tool Tool @relation(fields: [toolId], references: [id])
+
+  @@index([toolId])
+  @@map("tool_receipts")
 }
 
 // ============================================================
