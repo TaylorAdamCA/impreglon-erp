@@ -11,6 +11,7 @@ function createModelMock() {
     deleteMany: vi.fn(),
     count: vi.fn(),
     upsert: vi.fn(),
+    createMany: vi.fn(),
   };
 }
 
@@ -43,4 +44,5 @@ export const prisma = {
   toolPart: createModelMock(),
   toolAssignment: createModelMock(),
   toolReceipt: createModelMock(),
+  monthEndSnapshot: createModelMock(),
 };
