@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { OrderHeader } from "@/components/orders/order-header";
 import { OrderDetail } from "@/components/orders/order-detail";
 import { OrderStatusHistory } from "@/components/orders/order-status-history";
+import { OrderTools } from "@/components/orders/order-tools";
 
 interface OrderDetailPageProps {
   params: Promise<{ id: string }>;
@@ -28,6 +29,12 @@ export default async function OrderDetailPage({
       statusHistory: {
         orderBy: { changedAt: "desc" },
         include: { changedBy: { select: { username: true } } },
+      },
+      toolAssignments: {
+        include: {
+          tool: { select: { id: true, toolNo: true, description: true, status: true, isProprietary: true } },
+        },
+        orderBy: { createdAt: "desc" as const },
       },
     },
   });
@@ -81,6 +88,21 @@ export default async function OrderDetailPage({
           changedAt: h.changedAt.toISOString(),
           changedBy: h.changedBy,
           notes: h.notes,
+        }))}
+      />
+
+      <OrderTools
+        orderId={order.id}
+        assignments={order.toolAssignments.map((a: { id: string; assignment: string | null; tool: { id: string; toolNo: number; description: string; status: string; isProprietary: boolean } }) => ({
+          id: a.id,
+          assignment: a.assignment,
+          tool: {
+            id: a.tool.id,
+            toolNo: a.tool.toolNo,
+            description: a.tool.description,
+            status: a.tool.status,
+            isProprietary: a.tool.isProprietary,
+          },
         }))}
       />
     </div>
