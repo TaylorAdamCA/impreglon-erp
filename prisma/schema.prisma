@@ -557,16 +557,22 @@ model ProductLibraryItem {
   size          String?
   type          String?
 
-  // Coating prices — up to 8 configurable slots per library type.
+  // Coating prices — up to 14 configurable slots per library type.
   // Column labels (coating name + area spec) are defined in CoatingPriceLabel.
-  coatingPrice1 Decimal? @db.Decimal(10, 2)
-  coatingPrice2 Decimal? @db.Decimal(10, 2)
-  coatingPrice3 Decimal? @db.Decimal(10, 2)
-  coatingPrice4 Decimal? @db.Decimal(10, 2)
-  coatingPrice5 Decimal? @db.Decimal(10, 2)
-  coatingPrice6 Decimal? @db.Decimal(10, 2)
-  coatingPrice7 Decimal? @db.Decimal(10, 2)
-  coatingPrice8 Decimal? @db.Decimal(10, 2)
+  coatingPrice1  Decimal? @db.Decimal(10, 2)
+  coatingPrice2  Decimal? @db.Decimal(10, 2)
+  coatingPrice3  Decimal? @db.Decimal(10, 2)
+  coatingPrice4  Decimal? @db.Decimal(10, 2)
+  coatingPrice5  Decimal? @db.Decimal(10, 2)
+  coatingPrice6  Decimal? @db.Decimal(10, 2)
+  coatingPrice7  Decimal? @db.Decimal(10, 2)
+  coatingPrice8  Decimal? @db.Decimal(10, 2)
+  coatingPrice9  Decimal? @db.Decimal(10, 2)
+  coatingPrice10 Decimal? @db.Decimal(10, 2)
+  coatingPrice11 Decimal? @db.Decimal(10, 2)
+  coatingPrice12 Decimal? @db.Decimal(10, 2)
+  coatingPrice13 Decimal? @db.Decimal(10, 2)
+  coatingPrice14 Decimal? @db.Decimal(10, 2)
 
   // DRT (Diamond Resistant Technology) vendor prices — valves only.
   // Selling prices auto-calculated as cost × 1.3.
@@ -591,7 +597,7 @@ model ProductLibraryItem {
 model CoatingPriceLabel {
   id          String             @id @default(cuid())
   libraryType ProductLibraryType
-  slotNumber  Int                // 1-8
+  slotNumber  Int                // 1-14
   coatingName String             // e.g. "I 222M", "505", "Nickel"
   areaSpec    String             // e.g. "I.D.", "O.D.", "Full"
 
