@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { productSchema } from "@/lib/validations/product";
+import { calculateDrtMarkup, calculateFittingPrice3 } from "@/lib/pricing";
 import type { ProductLibraryType } from "@/generated/prisma/client";
 
 export async function PUT(
@@ -81,10 +82,10 @@ export async function PATCH(
 
     // Auto-calculate DRT selling prices
     if (data.drtCostLower != null) {
-      data.drtSellingLower = Math.round(data.drtCostLower * 1.3 * 100) / 100;
+      data.drtSellingLower = calculateDrtMarkup(data.drtCostLower);
     }
     if (data.drtCostHigher != null) {
-      data.drtSellingHigher = Math.round(data.drtCostHigher * 1.3 * 100) / 100;
+      data.drtSellingHigher = calculateDrtMarkup(data.drtCostHigher);
     }
 
     // Auto-calculate fitting coatingPrice3 = coatingPrice1 × 1.1
@@ -95,7 +96,7 @@ export async function PATCH(
     if (existing?.libraryType === "FITTING") {
       const cp1 = data.coatingPrice1 ?? (existing.coatingPrice1 ? Number(existing.coatingPrice1) : null);
       if (cp1 != null) {
-        data.coatingPrice3 = Math.round(cp1 * 1.1 * 100) / 100;
+        data.coatingPrice3 = calculateFittingPrice3(cp1);
       }
     }
 
