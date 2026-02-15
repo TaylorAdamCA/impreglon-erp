@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/permissions";
 import { invoiceDraftSchema } from "@/lib/validations/invoice";
+import { lookupGstRate, calculateGst } from "@/lib/gst";
 
 export async function POST(
   request: NextRequest,
@@ -54,20 +55,12 @@ export async function POST(
   const nextInvoiceNo = (maxInvoice?.invoiceNo ?? 0) + 1;
 
   // Lookup GST rate by order date
-  const taxRate = await prisma.taxRate.findFirst({
-    where: {
-      taxId: "GST",
-      effectiveDate: { lte: order.orderDate },
-      expiryDate: { gte: order.orderDate },
-    },
-  });
-
-  const gstRate = taxRate ? Number(taxRate.rate) : 0;
+  const gstRate = (await lookupGstRate(order.orderDate)) ?? 0;
   const orderTotal = Number(order.orderTotal);
   const gstAmount =
     validation.data.gstOverride !== undefined
       ? validation.data.gstOverride
-      : Math.round(orderTotal * (gstRate / 100) * 100) / 100;
+      : calculateGst(orderTotal, gstRate);
 
   const now = new Date();
 
