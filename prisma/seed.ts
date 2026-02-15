@@ -130,6 +130,42 @@ async function main() {
   });
 
   console.log('Seeded admin user (username: "admin", password: "admin")');
+
+  // Seed Canadian statutory holidays
+  const existingHolidays = await prisma.holiday.count();
+  if (existingHolidays === 0) {
+    await prisma.holiday.createMany({
+      data: [
+        { name: "New Year's Day", month: 1, day: 1, dayOfWeek: null, occurrence: null, holidayType: "FIXED" },
+        { name: "Family Day", month: 2, day: null, dayOfWeek: 2, occurrence: 3, holidayType: "FLOATING" },
+        { name: "Good Friday 2026", month: 4, day: 3, dayOfWeek: null, occurrence: null, holidayType: "EASTER" },
+        { name: "Victoria Day", month: 5, day: null, dayOfWeek: 2, occurrence: 3, holidayType: "FLOATING" },
+        { name: "Canada Day", month: 7, day: 1, dayOfWeek: null, occurrence: null, holidayType: "FIXED" },
+        { name: "Labour Day", month: 9, day: null, dayOfWeek: 2, occurrence: 1, holidayType: "FLOATING" },
+        { name: "Thanksgiving", month: 10, day: null, dayOfWeek: 2, occurrence: 2, holidayType: "FLOATING" },
+        { name: "Remembrance Day", month: 11, day: 11, dayOfWeek: null, occurrence: null, holidayType: "FIXED" },
+        { name: "Christmas Day", month: 12, day: 25, dayOfWeek: null, occurrence: null, holidayType: "FIXED" },
+        { name: "Boxing Day", month: 12, day: 26, dayOfWeek: null, occurrence: null, holidayType: "FIXED" },
+      ],
+    });
+    console.log("Seeded 10 Canadian statutory holidays");
+  } else {
+    console.log(`Skipped holiday seeding (${existingHolidays} already exist)`);
+  }
+
+  // Seed GST tax rates (historical)
+  const existingTaxRates = await prisma.taxRate.count();
+  if (existingTaxRates === 0) {
+    await prisma.taxRate.createMany({
+      data: [
+        { taxId: "GST", effectiveDate: new Date("2000-01-01"), expiryDate: new Date("2007-12-31"), rate: 7 },
+        { taxId: "GST", effectiveDate: new Date("2008-01-01"), expiryDate: new Date("2099-12-31"), rate: 5 },
+      ],
+    });
+    console.log("Seeded 2 GST tax rates");
+  } else {
+    console.log(`Skipped tax rate seeding (${existingTaxRates} already exist)`);
+  }
 }
 
 main()

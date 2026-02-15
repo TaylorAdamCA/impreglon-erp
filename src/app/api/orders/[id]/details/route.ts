@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { orderDetailSchema } from "@/lib/validations/order";
+import { calculateLineTotal } from "@/lib/pricing";
+import { calculateGst } from "@/lib/gst";
 
 async function recalculateOrderTotals(orderId: string) {
   const details = await prisma.orderDetail.findMany({
@@ -18,7 +20,7 @@ async function recalculateOrderTotals(orderId: string) {
     select: { gstRate: true },
   });
   const gstRate = Number(order?.gstRate ?? 0);
-  const gstAmount = parseFloat((orderTotal * gstRate / 100).toFixed(2));
+  const gstAmount = calculateGst(orderTotal, gstRate);
 
   await prisma.order.update({
     where: { id: orderId },
@@ -96,7 +98,7 @@ export async function POST(
     }
   }
 
-  const lineTotal = Math.round(quantity * unitPrice * 100) / 100;
+  const lineTotal = calculateLineTotal(quantity, unitPrice);
 
   const detail = await prisma.orderDetail.create({
     data: {
