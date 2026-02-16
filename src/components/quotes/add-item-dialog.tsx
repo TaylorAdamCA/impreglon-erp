@@ -44,6 +44,12 @@ interface ProductItem {
   coatingPrice6: number | null;
   coatingPrice7: number | null;
   coatingPrice8: number | null;
+  coatingPrice9: number | null;
+  coatingPrice10: number | null;
+  coatingPrice11: number | null;
+  coatingPrice12: number | null;
+  coatingPrice13: number | null;
+  coatingPrice14: number | null;
 }
 
 interface CoatingLabel {

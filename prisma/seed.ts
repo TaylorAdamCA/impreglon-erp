@@ -52,6 +52,8 @@ async function main() {
     { code: "coattype_rpt", description: "Coating type reports", category: "admin" },
     { code: "cust_sales", description: "Customer sales reports", category: "admin" },
     { code: "batch_rpts", description: "Batch reports", category: "admin" },
+    { code: "QA_MANAGE", description: "QA and rework management", category: "manufacturing" },
+    { code: "PROCESS_TEMPLATES_MANAGE", description: "Manage process templates", category: "admin" },
   ];
 
   const permissions = [];
@@ -151,6 +153,70 @@ async function main() {
     console.log("Seeded 10 Canadian statutory holidays");
   } else {
     console.log(`Skipped holiday seeding (${existingHolidays} already exist)`);
+  }
+
+  // Seed coating price labels
+  // These define the column headers for each library type's pricing grid.
+  // Coating names and area specs come from the original VFP form layouts.
+  const existingLabels = await prisma.coatingPriceLabel.count();
+  if (existingLabels === 0) {
+    await prisma.coatingPriceLabel.createMany({
+      data: [
+        // ANSI_VALVE — 14 price slots
+        // Slots 1-2: I 222M I.D./O.D. base pricing
+        // Slots 3-4: Nickel I.D./O.D. pricing
+        // Slots 5-6: Calculated tier (base × 1.1)
+        // Slots 7-8: Standard coating (DRT base)
+        // Slots 9-10: Premium coating (DRT base)
+        // Slots 11-14: DRT selling prices (slots 7-10 × 1.3)
+        { libraryType: "ANSI_VALVE", slotNumber: 1, coatingName: "I 222M", areaSpec: "I.D." },
+        { libraryType: "ANSI_VALVE", slotNumber: 2, coatingName: "I 222M", areaSpec: "O.D." },
+        { libraryType: "ANSI_VALVE", slotNumber: 3, coatingName: "Nickel", areaSpec: "I.D." },
+        { libraryType: "ANSI_VALVE", slotNumber: 4, coatingName: "Nickel", areaSpec: "O.D." },
+        { libraryType: "ANSI_VALVE", slotNumber: 5, coatingName: "I 222M (Calculated)", areaSpec: "I.D." },
+        { libraryType: "ANSI_VALVE", slotNumber: 6, coatingName: "I 222M (Calculated)", areaSpec: "O.D." },
+        { libraryType: "ANSI_VALVE", slotNumber: 7, coatingName: "Standard", areaSpec: "I.D." },
+        { libraryType: "ANSI_VALVE", slotNumber: 8, coatingName: "Standard", areaSpec: "O.D." },
+        { libraryType: "ANSI_VALVE", slotNumber: 9, coatingName: "Premium", areaSpec: "I.D." },
+        { libraryType: "ANSI_VALVE", slotNumber: 10, coatingName: "Premium", areaSpec: "O.D." },
+        { libraryType: "ANSI_VALVE", slotNumber: 11, coatingName: "DRT Standard", areaSpec: "I.D." },
+        { libraryType: "ANSI_VALVE", slotNumber: 12, coatingName: "DRT Standard", areaSpec: "O.D." },
+        { libraryType: "ANSI_VALVE", slotNumber: 13, coatingName: "DRT Premium", areaSpec: "I.D." },
+        { libraryType: "ANSI_VALVE", slotNumber: 14, coatingName: "DRT Premium", areaSpec: "O.D." },
+
+        // WELLHEAD_VALVE — 6 price slots
+        { libraryType: "WELLHEAD_VALVE", slotNumber: 1, coatingName: "I 222M", areaSpec: "I.D." },
+        { libraryType: "WELLHEAD_VALVE", slotNumber: 2, coatingName: "I 222M", areaSpec: "O.D." },
+        { libraryType: "WELLHEAD_VALVE", slotNumber: 3, coatingName: "Nickel", areaSpec: "I.D." },
+        { libraryType: "WELLHEAD_VALVE", slotNumber: 4, coatingName: "Nickel", areaSpec: "O.D." },
+        { libraryType: "WELLHEAD_VALVE", slotNumber: 5, coatingName: "I 222M (Calculated)", areaSpec: "I.D." },
+        { libraryType: "WELLHEAD_VALVE", slotNumber: 6, coatingName: "I 222M (Calculated)", areaSpec: "O.D." },
+
+        // FITTING — 3 price slots (no I.D./O.D. split)
+        // price1 = Base, price2 = Tier 2, price3 = Calculated (price1 × 1.1)
+        { libraryType: "FITTING", slotNumber: 1, coatingName: "I 222M", areaSpec: "Base" },
+        { libraryType: "FITTING", slotNumber: 2, coatingName: "I 222M", areaSpec: "Tier 2" },
+        { libraryType: "FITTING", slotNumber: 3, coatingName: "Nickel", areaSpec: "Calculated" },
+
+        // PUP_JOINT — 5 price slots
+        { libraryType: "PUP_JOINT", slotNumber: 1, coatingName: "I 222M", areaSpec: "I.D." },
+        { libraryType: "PUP_JOINT", slotNumber: 2, coatingName: "I 222M", areaSpec: "O.D." },
+        { libraryType: "PUP_JOINT", slotNumber: 3, coatingName: "Nickel", areaSpec: "I.D." },
+        { libraryType: "PUP_JOINT", slotNumber: 4, coatingName: "Nickel", areaSpec: "O.D." },
+        { libraryType: "PUP_JOINT", slotNumber: 5, coatingName: "I 222M (Calculated)", areaSpec: "Full" },
+
+        // WELLHEAD_COMPONENT — 3 price slots (slot 4 has only 1 product, omitting)
+        { libraryType: "WELLHEAD_COMPONENT", slotNumber: 1, coatingName: "I 222M", areaSpec: "I.D." },
+        { libraryType: "WELLHEAD_COMPONENT", slotNumber: 2, coatingName: "I 222M", areaSpec: "O.D." },
+        { libraryType: "WELLHEAD_COMPONENT", slotNumber: 3, coatingName: "Nickel", areaSpec: "Full" },
+
+        // ACCESSORY — 1 price slot (flat price)
+        { libraryType: "ACCESSORY", slotNumber: 1, coatingName: "Standard", areaSpec: "Price" },
+      ],
+    });
+    console.log("Seeded coating price labels for all library types");
+  } else {
+    console.log(`Skipped coating label seeding (${existingLabels} already exist)`);
   }
 
   // Seed GST tax rates (historical)
