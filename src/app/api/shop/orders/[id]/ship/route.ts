@@ -13,7 +13,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const allowed = await hasPermission(session.user.id, "SHOP_SHIP");
+  const allowed = await hasPermission(session.user.id, "shipping");
   if (!allowed) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -51,6 +51,9 @@ export async function PATCH(
     data: {
       status: "SHIPPED",
       shipDate: new Date(),
+      shipToAddressId: result.data.shipToAddressId,
+      carrierName: result.data.carrierName,
+      trackingNumber: result.data.trackingNumber || null,
     },
   });
 

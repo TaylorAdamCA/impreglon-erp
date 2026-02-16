@@ -128,20 +128,66 @@ describe("processStepSchema", () => {
 });
 
 describe("shipOrderSchema", () => {
-  it("accepts empty object", () => {
-    const result = shipOrderSchema.safeParse({});
+  const validData = {
+    shipToAddressId: "addr-1",
+    carrierName: "FedEx",
+  };
+
+  it("accepts valid required fields", () => {
+    const result = shipOrderSchema.safeParse(validData);
     expect(result.success).toBe(true);
   });
 
-  it("accepts valid notes", () => {
+  it("accepts all fields", () => {
     const result = shipOrderSchema.safeParse({
-      notes: "Shipped via FedEx tracking #12345",
+      ...validData,
+      trackingNumber: "1Z999AA10123456784",
+      notes: "Handle with care",
     });
     expect(result.success).toBe(true);
   });
 
+  it("rejects missing shipToAddressId", () => {
+    const result = shipOrderSchema.safeParse({
+      carrierName: "FedEx",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects empty shipToAddressId", () => {
+    const result = shipOrderSchema.safeParse({
+      ...validData,
+      shipToAddressId: "",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects missing carrierName", () => {
+    const result = shipOrderSchema.safeParse({
+      shipToAddressId: "addr-1",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects empty carrierName", () => {
+    const result = shipOrderSchema.safeParse({
+      ...validData,
+      carrierName: "",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects trackingNumber exceeding 100 chars", () => {
+    const result = shipOrderSchema.safeParse({
+      ...validData,
+      trackingNumber: "A".repeat(101),
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("rejects notes exceeding 500 chars", () => {
     const result = shipOrderSchema.safeParse({
+      ...validData,
       notes: "A".repeat(501),
     });
     expect(result.success).toBe(false);
@@ -149,13 +195,18 @@ describe("shipOrderSchema", () => {
 
   it("accepts notes at exactly 500 chars", () => {
     const result = shipOrderSchema.safeParse({
+      ...validData,
       notes: "A".repeat(500),
     });
     expect(result.success).toBe(true);
   });
 
-  it("accepts undefined notes", () => {
-    const result = shipOrderSchema.safeParse({ notes: undefined });
+  it("accepts undefined optional fields", () => {
+    const result = shipOrderSchema.safeParse({
+      ...validData,
+      trackingNumber: undefined,
+      notes: undefined,
+    });
     expect(result.success).toBe(true);
   });
 });

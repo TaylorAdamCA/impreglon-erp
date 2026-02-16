@@ -22,6 +22,9 @@ export const processStepSchema = z.object({
 export type ProcessStepInput = z.infer<typeof processStepSchema>;
 
 export const shipOrderSchema = z.object({
+  shipToAddressId: z.string().min(1, "Ship-to address is required"),
+  carrierName: z.string().min(1, "Carrier is required"),
+  trackingNumber: z.string().max(100).optional(),
   notes: z.string().max(500).optional(),
 });
 
