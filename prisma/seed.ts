@@ -54,6 +54,7 @@ async function main() {
     { code: "batch_rpts", description: "Batch reports", category: "admin" },
     { code: "QA_MANAGE", description: "QA and rework management", category: "manufacturing" },
     { code: "PROCESS_TEMPLATES_MANAGE", description: "Manage process templates", category: "admin" },
+    { code: "QUOTES_APPROVE", description: "Approve or reject quotes", category: "orders" },
   ];
 
   const permissions = [];
