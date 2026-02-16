@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ClickableRow } from "@/components/ui/clickable-row";
 import { OrderSearch } from "@/components/orders/order-search";
 import { CreateOrderDialog } from "@/components/orders/create-order-dialog";
 
@@ -188,14 +189,9 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
               </TableRow>
             ) : (
               orders.map((o) => (
-                <TableRow key={o.id}>
-                  <TableCell className="font-mono">
-                    <Link
-                      href={`/orders/${o.id}`}
-                      className="font-medium text-primary hover:underline"
-                    >
-                      {o.orderNo}
-                    </Link>
+                <ClickableRow key={o.id} href={`/orders/${o.id}`}>
+                  <TableCell className="font-mono font-medium">
+                    {o.orderNo}
                   </TableCell>
                   <TableCell>{o.customer.company}</TableCell>
                   <TableCell>{o.poNumber || "\u2014"}</TableCell>
@@ -209,7 +205,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                   <TableCell className="text-right">
                     ${Number(o.gstAmount).toFixed(2)}
                   </TableCell>
-                </TableRow>
+                </ClickableRow>
               ))
             )}
           </TableBody>

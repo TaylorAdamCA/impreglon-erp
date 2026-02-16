@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ClickableRow } from "@/components/ui/clickable-row";
 import { QuoteSearch } from "@/components/quotes/quote-search";
 import { CreateQuoteDialog } from "@/components/quotes/create-quote-dialog";
 
@@ -115,14 +116,9 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
               </TableRow>
             ) : (
               quotes.map((q) => (
-                <TableRow key={q.id}>
-                  <TableCell className="font-mono">
-                    <Link
-                      href={`/quotes/${q.id}`}
-                      className="font-medium text-primary hover:underline"
-                    >
-                      {q.quoteNo}
-                    </Link>
+                <ClickableRow key={q.id} href={`/quotes/${q.id}`}>
+                  <TableCell className="font-mono font-medium">
+                    {q.quoteNo}
                   </TableCell>
                   <TableCell>{q.customer.company}</TableCell>
                   <TableCell>
@@ -157,7 +153,7 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
                     ${Number(q.quoteTotal).toFixed(2)}
                   </TableCell>
                   <TableCell>{q.createdBy.username}</TableCell>
-                </TableRow>
+                </ClickableRow>
               ))
             )}
           </TableBody>

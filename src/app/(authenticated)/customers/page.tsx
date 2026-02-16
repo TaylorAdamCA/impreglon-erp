@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ClickableRow } from "@/components/ui/clickable-row";
 import { CustomerSearch } from "@/components/customers/customer-search";
 
 interface CustomersPageProps {
@@ -111,15 +112,10 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
               </TableRow>
             ) : (
               customers.map((customer) => (
-                <TableRow key={customer.id}>
+                <ClickableRow key={customer.id} href={`/customers/${customer.id}`}>
                   <TableCell className="font-mono">{customer.custNo}</TableCell>
-                  <TableCell>
-                    <Link
-                      href={`/customers/${customer.id}`}
-                      className="font-medium text-primary hover:underline"
-                    >
-                      {customer.company}
-                    </Link>
+                  <TableCell className="font-medium">
+                    {customer.company}
                   </TableCell>
                   <TableCell>{customer.city}</TableCell>
                   <TableCell>{customer.province}</TableCell>
@@ -130,7 +126,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
                       {customer.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
-                </TableRow>
+                </ClickableRow>
               ))
             )}
           </TableBody>
