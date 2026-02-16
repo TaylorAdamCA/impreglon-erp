@@ -25,6 +25,11 @@ function makeRequest(body: unknown) {
 
 const paramsPromise = Promise.resolve({ id: "order-1" });
 
+const validShipBody = {
+  shipToAddressId: "addr-1",
+  carrierName: "FedEx",
+};
+
 describe("PATCH /api/shop/orders/[id]/ship", () => {
   beforeEach(() => {
     mockHasPermission.mockResolvedValue(true);
@@ -40,7 +45,7 @@ describe("PATCH /api/shop/orders/[id]/ship", () => {
     expect(body.error).toBe("Unauthorized");
   });
 
-  it("returns 403 when user lacks SHOP_SHIP permission", async () => {
+  it("returns 403 when user lacks shipping permission", async () => {
     mockHasPermission.mockResolvedValueOnce(false);
 
     const res = await PATCH(makeRequest({}), { params: paramsPromise });
@@ -50,7 +55,7 @@ describe("PATCH /api/shop/orders/[id]/ship", () => {
     expect(body.error).toBe("Forbidden");
     expect(mockHasPermission).toHaveBeenCalledWith(
       "test-user-id",
-      "SHOP_SHIP"
+      "shipping"
     );
   });
 
@@ -77,6 +82,23 @@ describe("PATCH /api/shop/orders/[id]/ship", () => {
     expect(body.error).toBe("Only orders ready to ship can be shipped");
   });
 
+  it("returns 400 for validation failure (missing required fields)", async () => {
+    mockPrisma.order.findUnique.mockResolvedValueOnce({
+      id: "order-1",
+      status: "READY_TO_SHIP",
+    } as never);
+
+    const res = await PATCH(
+      makeRequest({}),
+      { params: paramsPromise }
+    );
+
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe("Validation failed");
+    expect(body.issues).toBeDefined();
+  });
+
   it("returns 400 for validation failure (notes too long)", async () => {
     mockPrisma.order.findUnique.mockResolvedValueOnce({
       id: "order-1",
@@ -84,7 +106,7 @@ describe("PATCH /api/shop/orders/[id]/ship", () => {
     } as never);
 
     const res = await PATCH(
-      makeRequest({ notes: "x".repeat(501) }),
+      makeRequest({ ...validShipBody, notes: "x".repeat(501) }),
       { params: paramsPromise }
     );
 
@@ -114,7 +136,7 @@ describe("PATCH /api/shop/orders/[id]/ship", () => {
       notes: null,
     } as never);
 
-    const res = await PATCH(makeRequest({}), { params: paramsPromise });
+    const res = await PATCH(makeRequest(validShipBody), { params: paramsPromise });
 
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -130,6 +152,9 @@ describe("PATCH /api/shop/orders/[id]/ship", () => {
         data: expect.objectContaining({
           status: "SHIPPED",
           shipDate: expect.any(Date),
+          shipToAddressId: "addr-1",
+          carrierName: "FedEx",
+          trackingNumber: null,
         }),
       })
     );
@@ -170,7 +195,7 @@ describe("PATCH /api/shop/orders/[id]/ship", () => {
     } as never);
 
     const res = await PATCH(
-      makeRequest({ notes: "Shipped via FedEx tracking #12345" }),
+      makeRequest({ ...validShipBody, notes: "Shipped via FedEx tracking #12345" }),
       { params: paramsPromise }
     );
 

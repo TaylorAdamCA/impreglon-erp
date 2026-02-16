@@ -292,6 +292,8 @@ model Order {
   isComplete      Boolean     @default(false)
   percentComplete Int         @default(0)
   shipToAddressId String?
+  carrierName     String?
+  trackingNumber  String?
   sourceQuoteId   String?
   legacyOrderNo   Int?
 
